@@ -1,5 +1,5 @@
 
-# Toaplan Version 1 (Demon's World) FPGA Implementation
+# Toaplan (Demon's World) FPGA Implementation
 
 FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on schematics and verified against an OutZone (TP-015 Conversion / TP-018) and Tatsujin (TP-013B).
 
@@ -59,18 +59,18 @@ _(Horror Story)_
 | Chip                                                                   | Use              |
 | -----------------------------------------------------------------------|------------------|
 | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU         |
+| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP              |
 | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU        |
 | [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio       |
-| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP (Protection) |
 
 ### Custom Components
 
-| Chip                            | Function           |
-| --------------------------------|--------------------|
-| **NEC D65081R077**              | Custom Gate-Array  |
-| **FCU-02**                      | Sprite RAM         |
-| **TOAPLAN-02 M70H005 / GXL-02** | Sprite Counter     |
-| **BCU-02**                      | Tile Map Generator | <br>
+| Chip                                             | Function           |
+| -------------------------------------------------|--------------------|
+| **NEC D65081R077**                               | Custom Gate-Array  |
+| **FCU-02**                                       | Sprite RAM         |
+| **FDA MN53007T0A / TOAPLAN-02 M70H005 / GXL-02** | Sprite Counter     |
+| **BCU-02**                                       | Tile Map Generator | <br>
 
 # Core Features
 
@@ -80,8 +80,7 @@ _(Horror Story)_
 
 | Refresh Rate      | Timing Parameter     | HTOTAL | VTOTAL |
 |-------------------|----------------------|--------|--------|
-| 15.56kHz / 55.2Hz | TP-018               | 450    | 282    |
-| 15.56kHz / 57.6Hz | TP-013B, B90, TP-015 | 450    | 270    |
+| 15.56kHz / 55.2Hz | TP-016               | 450    | 282    |
 | 15.73kHz / 59.8Hz | NTSC                 | 445    | 264    |
 
 ### P1/P2 Input Swap Option
