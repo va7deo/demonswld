@@ -5,7 +5,7 @@ FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](h
 
 The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. Currently in beta state, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
 
-![Toaplan_logo_shadow_small](https://user-images.githubusercontent.com/32810066/151543842-5f7380a4-9b29-472d-bc03-8cc04a579cf2.png)
+![dwcore_github](https://github.com/va7deo/demonswld/assets/32810066/f8626176-ae42-4c07-8083-24b4930384a0)
 
 ## Supported Titles
 
@@ -121,7 +121,11 @@ _(Horror Story)_
 
 ### Keyboard Handler
 
-<br> - Keyboard inputs mapped to mame defaults for Player 1/Player 2. <br><br>
+<br>
+
+- Keyboard inputs mapped to mame defaults for Player 1 / Player 2.
+
+<br>
 
 | Services                                                                                                                                                                                           | Coin/Start                                                                                                                                                                                              |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
