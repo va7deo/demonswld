@@ -1543,20 +1543,20 @@ reg [7:0]   download_data;
 reg         download_wr;
 wire        download_wait;
 
+// download tms32010 internal rom
 always @ (posedge clk_sys) begin
 
-    download_en <= ioctl_download ; 
+    download_en    <= ioctl_download & (download_index == 0) ; 
     download_index <= ioctl_index ;
 
-    // todo: figure out the mra offset
-    if ( ioctl_addr >= 26'h000000 && ioctl_addr < 26'h000000 ) begin
+    if ( ioctl_addr >= 26'h208000 && ioctl_addr < 26'h209000 ) begin
         // dsp rom is 16 bits wide
-        download_addr <= ioctl_addr[10:1] ;
-        tms_rom_w    <= ioctl_wr & ioctl_addr[0];
+        download_addr <= ioctl_addr[11:1] ;
+        tms_rom_w     <= ioctl_wr & ioctl_addr[0];
         tms_rom_din[ { ~ioctl_addr[0], 3'b111 } -: 8 ] <= ioctl_dout ;
     end 
     
-    download_wr <= ioctl_wr & ioctl_download & (download_index == 0);
+    download_wr <= ioctl_wr & download_en;
 end
 
 reg         tms_rom_w;
@@ -1567,14 +1567,14 @@ wire [15:0] tms_rom_dout ;
 dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
 (
     .clock_a( clk_sys ), // rom download. ioctl stuff. 
-    .address_a( download_addr[11:1] ),
-    .wren_a( tms_rom_w ), // ioctrl_wr?
+    .address_a( download_addr ),
+    .wren_a( tms_rom_w ), // 
     .data_a( tms_rom_din ), // 16 bit wide
     .q_a( ),
 
     .clock_b( clk_14M ),  // tms clock
     .address_b( tms_rom_addr ),
-    .data_a(  ),
+    .data_a( ),
     .wren_b( 0 ),
     .q_b( tms_rom_dout )
 );
