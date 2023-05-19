@@ -809,7 +809,11 @@ TMS320C1X dsp
 
     .A(),           // 
     .DI(),          // 
-    .DO(),          // 
+    .DO(),          //
+    
+    .PC(tms_rom_addr),      // output reg [11:0] PC,
+    .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
+    
     .WE_N(),        // (WE) Write enable for device output data on D15-D0
     .DEN_N(),       // (DEN) Data enable for device input data on D15-D0
     .MEN_N(),       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
@@ -1531,6 +1535,27 @@ always @ (posedge clk_sys) begin
         end
     end
 end
+
+//output reg [11: 0] PC,
+//input      [15: 0] ROM_Q,
+
+wire [11:0] tms_rom_addr ;
+wire [15:0] tms_rom_dout ;
+ 
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
+(
+    .clock_a( clk_sys ), // rom download. ioctl stuff. 
+    .address_a(  ),
+    .wren_a(  ), // ioctrl_wr?
+    .data_a( ), // 16 bit wide
+    .q_a( ),
+
+    .clock_b( clk_14M ),  // tms clock
+    .address_b( tms_rom_addr ),
+    .data_a( ),
+    .wren_b(0),
+    .q_b(tms_rom_dout)
+);
 
 // tile data buffer
 
