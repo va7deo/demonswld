@@ -20,8 +20,7 @@ module TMS320C1X
     
 	output reg         WE_N,
 	output reg         DEN_N,
-	output reg         MEN_N,
-	input              RDY
+	output reg         MEN_N
 );
 
 	import TMS320C1X_PKG::*;

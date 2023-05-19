@@ -805,20 +805,26 @@ TMS320C1X dsp
 
     .RS_N(~tms_reset),  // (RS) Reset for initializing the device
     .INT_N(1),          // (INT) External interrupt input
-    .BIO_N(),           // (BIO) External polling input
+    .BIO_N(1),          // (BIO) External polling input
 
-    .A(),           // 
-    .DI(),          // 
-    .DO(),          //
+    .A(tms_addr),       // 
+    .DI(tms_din),       // 
+    .DO(tms_dout),      //
     
     .PC(tms_rom_addr),      // output reg [11:0] PC,
     .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
     
-    .WE_N(),        // (WE) Write enable for device output data on D15-D0
-    .DEN_N(),       // (DEN) Data enable for device input data on D15-D0
-    .MEN_N(),       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
-    .RDY()          // 
+    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0
+    .DEN_N(tms_den_n),       // (DEN) Data enable for device input data on D15-D0
+    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
 );
+
+wire [11:0] tms_addr ;
+reg  [15:0] tms_din ;
+wire [15:0] tms_dout ;
+wire        tms_we_n;
+wire        tms_den_n;
+wire        tms_men_n;
 
 wire [15:0] cpu_shared_dout;
 wire  [7:0] z80_shared_dout;
