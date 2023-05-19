@@ -470,7 +470,7 @@ wire pll_locked;
 
 wire clk_sys;
 wire turbo_68k = status[15];
-reg  clk_3_5M, clk_7M, clk_10M, clk_14M;
+reg  clk_3_5M, clk_7M, clk_10M, clk_14M, clk_14M_N;
 
 wire  clk_70M;
 
@@ -522,12 +522,15 @@ always @ (posedge clk_sys ) begin
     end else begin
         clk7_count <= clk7_count + 1;
     end
+    
     clk_14M <= ( clk14_count == 0);
+    clk_14M_N <= ( clk14_count == 2);
     if ( clk14_count == 4 ) begin
         clk14_count <= 0;
     end else begin
         clk14_count <= clk14_count + 1;
     end
+    
     clk_3_5M <= ( clk_3_5_count == 0);
     if ( clk_3_5_count == 19 ) begin
         clk_3_5_count <= 0;
@@ -775,29 +778,43 @@ always @ (posedge clk_sys) begin
     end
 end
 
-// (tms320c10fnl.pdf)
+wire        tms_reset;
+reg   [7:0] tms_reset_count;
 
-//TMS320C1X dsp
-// (
-//    .CLK(clk_70M),  // (X2/CLKIN) Crystal input internal oscillator or external system clock input
-//    .RST_N(~reset), //
-//    .EN(1),         // (DEN) Data enable for device input data on D15-D0
+always @ (posedge clk_70M) begin
+    if ( reset == 1 ) begin
+        tms_reset_count <= 0;
+        tms_reset <= 1 ;
+    end else begin
+        if ( tms_reset_count < 50 ) begin
+            tms_reset_count <= tms_reset_count + 1;
+        end else begin
+            tms_reset <= 0 ;
+        end
+    end
+end
 
-//    .CE_F(clk_14M), // Phased clocks for chip enable
-//    .CE_R(clk_14M), // Chip enable clock phase
+TMS320C1X dsp
+ (
+    .CLK(clk_70M),      // (X2/CLKIN) Crystal input internal oscillator or external system clock input
+    .RST_N(~reset),     //
+    .EN(1),             // (DEN) Data enable for device input data on D15-D0
 
-//    .RS_N(),        // (RS) Reset for initializing the device
-//    .INT_N(),       // (INT) External interrupt input
-//    .BIO_N(),       // (BIO) External polling input
+    .CE_F(clk_14M),     // Phased clocks for chip enable
+    .CE_R(clk_14M_N),   // Chip enable clock phase
 
-//    .A(),           // 
-//    .DI(),          // 
-//    .DO(),          // 
-//    .WE_N(),        // (WE) Write enable for device output data on D15-D0
-//    .DEN_N(),       // (DEN) Data enable for device input data on D15-D0
-//    .MEN_N(),       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
-//    .RDY()          // 
-//);
+    .RS_N(~tms_reset),  // (RS) Reset for initializing the device
+    .INT_N(1),          // (INT) External interrupt input
+    .BIO_N(),           // (BIO) External polling input
+
+    .A(),           // 
+    .DI(),          // 
+    .DO(),          // 
+    .WE_N(),        // (WE) Write enable for device output data on D15-D0
+    .DEN_N(),       // (DEN) Data enable for device input data on D15-D0
+    .MEN_N(),       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
+    .RDY()          // 
+);
 
 wire [15:0] cpu_shared_dout;
 wire  [7:0] z80_shared_dout;

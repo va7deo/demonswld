@@ -1,8 +1,5 @@
 module TMS320C1X
-#(
-	parameter rom_file = "bsmt2000.mif"
-)
- (
+(
 	input              CLK,
 	input              RST_N,
 	input              EN,
@@ -17,6 +14,10 @@ module TMS320C1X
 	output reg [11: 0] A,
 	input      [15: 0] DI,
 	output reg [15: 0] DO,
+    
+    output reg [11: 0] PC,
+    input      [15: 0] ROM_Q,
+    
 	output reg         WE_N,
 	output reg         DEN_N,
 	output reg         MEN_N,
@@ -25,7 +26,7 @@ module TMS320C1X
 
 	import TMS320C1X_PKG::*;
 	
-	bit  [11: 0] PC;
+//	bit  [11: 0] PC;
 	bit  [11: 0] STACK[4];
 	ST_t         ST;
 	bit  [15: 0] AR[2];
@@ -48,26 +49,37 @@ module TMS320C1X
 	bit          DEN;
 	bit          MEN;
 	
-	bit  [15: 0] ROM_Q;
-	TMS320C1X_ROM #(rom_file) ROM (
-		.CLK(CLK),
-		.ADDR(PC),
-		.Q(ROM_Q)
-	);
+//	bit  [15: 0] ROM_Q;
+    
+//	TMS320C1X_ROM #(rom_file) ROM (
+//		.CLK(CLK),
+//		.ADDR(PC),
+//		.Q(ROM_Q)
+//	);
 	
 	assign DECI = IDecode(IC, STATE);
 	
 	wire [ 7: 0] RAM_A = !IC[7] ? {ST.DP,IC[6:0]} : AR[ST.ARP][7:0];
 	bit  [15: 0] RAM_Q;
-	TMS320C1X_RAM RAM (
-		.CLK(CLK),
-		.WADDR(!DECI.RAMN ? RAM_A : RAM_A + 8'd1),
-		.DATA(DBO),
-		.WREN(DECI.RAMW & EN & CE_R),
-		.RADDR(RAM_A),
-		.Q(RAM_Q)
-	);
-	
+    
+//	TMS320C1X_RAM RAM
+//    (
+//		.CLK(CLK),
+//		.WADDR(!DECI.RAMN ? RAM_A : RAM_A + 8'd1),
+//		.DATA(DBO),
+//		.WREN(DECI.RAMW & EN & CE_R),
+//		.RADDR(RAM_A),
+//		.Q(RAM_Q)
+//	);
+
+dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) internal_ram
+(
+    .clock_a ( CLK ),
+    .address_a ( !DECI.RAMN ? RAM_A : RAM_A + 8'd1 ),
+    .wren_a ( DECI.RAMW & EN & CE_R ),
+    .data_a ( DBO ),
+    .q_a ( RAM_Q ),    
+);
 	
 	wire [11: 0] PC_NEXT = PC + 12'd1;
 	
