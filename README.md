@@ -1,7 +1,7 @@
 
 # Toaplan (Demon's World) FPGA Implementation
 
-FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on schematics and verified against an OutZone (TP-015 Conversion / TP-018) and Tatsujin (TP-013B).
+FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on schematics and verified against an OutZone (TP-015 Conversion / TP-018).
 
 The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. Currently in beta state, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
 
@@ -56,7 +56,7 @@ _(Horror Story)_
 
 ### Main Components
 
-| Chip                                                                   | Use              |
+| Chip                                                                   | Function         |
 | -----------------------------------------------------------------------|------------------|
 | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU         |
 | [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP              |
