@@ -1,9 +1,9 @@
 <misterromdescription>
-    <name>Demon's World / Horror Story (Set 1)</name>
-    <setname>demonwld</setname>
+    <name>Demon's World / Horror Story (Set 2)</name>
+    <setname>demonwld1</setname>
     <rbf>demonwld</rbf>
     <mameversion>0254</mameversion>
-    <year>1990</year>
+    <year>1989</year>
     <manufacturer>Toaplan</manufacturer>
     <players>2</players>
     <joystick>8-way</joystick>
@@ -32,13 +32,13 @@
         <part>00</part>
     </rom>
 
-    <rom index="0" zip="demonwld.zip" md5="None">
+    <rom index="0" zip="demonwld1.zip|demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
         <interleave output="16">
-            <part name="o16-10.v2" crc="ca8194f3" map="01"/>
-            <part name="o16-09.v2" crc="7baea7ba" map="10"/>
+            <part name="o16n-10.bin" crc="fc38aeaa" map="01"/>
+            <part name="o16n-09.bin" crc="74f66643" map="10"/>
         </interleave>
-        <part repeat="0x40000">FF</part>
+        <part repeat="0x40000"> FF</part>
 
         <!-- gfx1 - starts at 0x80000 -->
         <interleave output="32">
@@ -58,13 +58,13 @@
         </interleave>
 
         <!-- audiocpu - starts at 0x200000 -->
-        <part name="rom11.v2" crc="dbe08c85"/>
+        <part name="o16-11.bin" crc="dbe08c85"/>
 
         <patch offset="0x0000145E">67 16</patch>
         <patch offset="0x00001474">66 20</patch>
         <patch offset="0x00001430">4E 71</patch>
         <patch offset="0x00001438">60 0A</patch>
 
-        <!-- Total 0x208000 bytes - 2080 kBytes -->
+        <!-- Total 0x208000 bytes - 2084 kBytes -->
     </rom>
 </misterromdescription>
