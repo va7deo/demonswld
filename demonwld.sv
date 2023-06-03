@@ -209,7 +209,6 @@ wire       orientation  = ~status[3];
 wire [2:0] scan_lines   = status[6:4];
 reg        refresh_mod;
 reg        new_vmode;
-wire       sound_on     = status[11];
 
 always @(posedge clk_sys) begin
     if (refresh_mod != status[19]) begin
@@ -250,16 +249,16 @@ localparam CONF_STR = {
     "P1-;",
     "P2,Audio Settings;",
     "P2-;",
-    "P2OB,OPL2 Audio,On,Off;",
+    "P2oBC,OPL2 Volume,Default,50%,25%,0%;",
     "P2-;",
     "-;",
     "P3,Core Options;",
     "P3-;",
-    "P3OE,Service Menu,Off,On;",
-    "P3-;",
     "P3o6,Swap P1/P2 Joystick,Off,On;",
     "P3-;",
     "P3OF,68k Freq.,10Mhz,17.5MHz;",
+    "P3-;",
+    "P3o0,Scroll Debug,Off,On;",
     "P3-;",
     "DIP;",
     "-;",
@@ -273,7 +272,7 @@ localparam CONF_STR = {
 wire hps_forced_scandoubler;
 wire forced_scandoubler = hps_forced_scandoubler | status[10];
 
-wire  [2:0] buttons;
+wire  [1:0] buttons;
 wire [63:0] status;
 wire [10:0] ps2_key;
 wire [15:0] joy0, joy1;
@@ -316,12 +315,6 @@ always @(posedge clk_sys) begin
     end
 end
 
-always @(posedge clk_sys) begin
-    if (ioctl_wr && ioctl_index==1) begin
-        pcb <= ioctl_dout;
-    end
-end
-
 wire        direct_video;
 
 wire        ioctl_download;
@@ -334,22 +327,19 @@ wire [26:0] ioctl_addr;
 wire [15:0] ioctl_dout;
 wire [15:0] ioctl_din;
 
-reg   [7:0] pcb;
 wire        tile_priority_type;
 wire [15:0] scroll_y_offset;
-
-localparam pcb_demonwld    = 0;
 
 wire [21:0] gamma_bus;
 
 //<buttons names="Fire,Jump,Start,Coin,Pause" default="A,B,R,L,Start" />
 // Inputs tied to z80_din
-reg [15:0] p1;
-reg [15:0] p2;
-reg [15:0] z80_dswa;
-reg [15:0] z80_dswb;
-reg [15:0] z80_tjump;
-reg [15:0] system;
+reg [7:0] p1;
+reg [7:0] p2;
+reg [7:0] z80_dswa;
+reg [7:0] z80_dswb;
+reg [7:0] z80_tjump;
+reg [7:0] system;
 
 always @ (posedge clk_sys ) begin
     p1        <= { 1'b0, p1_buttons[2:0], p1_right, p1_left, p1_down, p1_up };
@@ -357,7 +347,12 @@ always @ (posedge clk_sys ) begin
     z80_dswa  <= sw[0];
     z80_dswb  <= sw[1];
     z80_tjump <= sw[2];
-    system    <= { vbl, start2, start1, coin_b, coin_a, service, key_tilt, key_service };
+
+    if ( status[32] == 1 ) begin
+        system    <= { vbl, start2 | p1_buttons[3], start1 | p1_buttons[3], coin_b, coin_a, service | status[32], key_tilt, key_service };
+    end else begin
+        system    <= { vbl, start2,                 start1,                 coin_b, coin_a, service,              key_tilt, key_service };
+    end
 end
 
 reg        p1_swap;
@@ -366,13 +361,13 @@ reg        p1_right;
 reg        p1_left;
 reg        p1_down;
 reg        p1_up;
-reg [2:0]  p1_buttons;
+reg [3:0]  p1_buttons;
 
 reg        p2_right;
 reg        p2_left;
 reg        p2_down;
 reg        p2_up;
-reg [2:0]  p2_buttons;
+reg [3:0]  p2_buttons;
 
 reg start1;
 reg start2;
@@ -389,37 +384,37 @@ always @ * begin
         p1_left    <= joy0[1]   | key_p1_left;
         p1_down    <= joy0[2]   | key_p1_down;
         p1_up      <= joy0[3]   | key_p1_up;
-        p1_buttons <= joy0[6:4] | {key_p1_c, key_p1_b, key_p1_a};
+        p1_buttons <= joy0[7:4] | {key_p1_c, key_p1_b, key_p1_a};
 
         p2_right   <= joy1[0]   | key_p2_right;
         p2_left    <= joy1[1]   | key_p2_left;
         p2_down    <= joy1[2]   | key_p2_down;
         p2_up      <= joy1[3]   | key_p2_up;
-        p2_buttons <= joy1[6:4] | {key_p2_c, key_p2_b, key_p2_a};
+        p2_buttons <= joy1[7:4] | {key_p2_c, key_p2_b, key_p2_a};
     end else begin
         p2_right   <= joy0[0]   | key_p1_right;
         p2_left    <= joy0[1]   | key_p1_left;
         p2_down    <= joy0[2]   | key_p1_down;
         p2_up      <= joy0[3]   | key_p1_up;
-        p2_buttons <= joy0[6:4] | {key_p1_c, key_p1_b, key_p1_a};
+        p2_buttons <= joy0[7:4] | {key_p1_c, key_p1_b, key_p1_a};
 
         p1_right   <= joy1[0]   | key_p2_right;
         p1_left    <= joy1[1]   | key_p2_left;
         p1_down    <= joy1[2]   | key_p2_down;
         p1_up      <= joy1[3]   | key_p2_up;
-        p1_buttons <= joy1[6:4] | {key_p2_c, key_p2_b, key_p2_a};
+        p1_buttons <= joy1[7:4] | {key_p2_c, key_p2_b, key_p2_a};
     end
 end
 
 always @ * begin
-        start1    <= joy0[7]  | joy1[7]  | key_start_1p;
-        start2    <= joy0[8]  | joy1[8]  | key_start_2p;
+        start1    <= joy0[8]  | joy1[7]  | key_start_1p;
+        start2    <= joy0[9]  | joy1[8]  | key_start_2p;
 
-        coin_a    <= joy0[9]  | joy1[9]  | key_coin_a;
-        coin_b    <= joy0[10] | joy1[10] | key_coin_b;
+        coin_a    <= joy0[10] | joy1[10] | key_coin_a;
+        coin_b    <= joy0[11] | joy1[11] | key_coin_b;
 
-        b_pause   <= joy0[11] | key_pause;
-        service   <= key_test | status[14];
+        b_pause   <= joy0[12] | key_pause;
+        service   <= key_test;
 end
 
 // Keyboard handler
@@ -590,7 +585,7 @@ wire    pause_cpu;
 wire    hs_pause;
 
 // 8 bits per colour, 70MHz sys clk
-pause #(8,8,8,70) pause 
+pause #(8,8,8,70) pause
 (
     .clk_sys(clk_sys),
     .reset(reset),
@@ -917,13 +912,53 @@ jtopl #(.OPL_TYPE(2)) jtopl2
     .sample(opl_sample_clk)
 );
 
-always @ (posedge opl_sample_clk) begin
-    if ( sound_on == 0 ) begin
-        AUDIO_L <= sample;
-        AUDIO_R <= sample;
+wire [1:0] opl2_level = status[44:43];    // opl2 audio mix
+
+reg  [7:0] opl2_mult;
+
+// set the multiplier for each channel from menu
+
+always @( posedge clk_sys, posedge reset ) begin
+    if (reset) begin
+        opl2_mult<=0;
     end else begin
+        case( opl2_level )
+            0: opl2_mult <= 8'h0c;    // 75%
+            1: opl2_mult <= 8'h08;    // 50%
+            2: opl2_mult <= 8'h04;    // 25%
+            3: opl2_mult <= 8'h00;    // 0%
+        endcase
+    end
+end
+
+wire signed [15:0] mono;
+
+jtframe_mixer #(.W0(16), .WOUT(16)) u_mix_mono(
+    .rst    ( reset        ),
+    .clk    ( clk_sys      ),
+    .cen    ( 1'b1         ),
+    // input signals
+    .ch0    ( sample       ),
+    .ch1    ( 16'd0        ),
+    .ch2    ( 16'd0        ),
+    .ch3    ( 16'd0        ),
+    // gain for each channel in 4.4 fixed point format
+    .gain0  ( opl2_mult    ),
+    .gain1  ( 8'd0         ),
+    .gain2  ( 8'd0         ),
+    .gain3  ( 8'd0         ),
+    .mixed  ( mono         ),
+    .peak   (              )
+);
+
+always @ (posedge clk_sys ) begin
+    if ( pause_cpu == 1 ) begin
         AUDIO_L <= 0;
         AUDIO_R <= 0;
+    end else if ( pause_cpu == 0 ) begin
+        // mix audio
+        AUDIO_L <= mono;
+        AUDIO_R <= mono;
     end
 end
 
@@ -1044,10 +1079,10 @@ always @ (posedge clk_sys) begin
         int_en <= 0;
         reset_z80_n <= 0;
     end else begin
-        if ( pcb != 3 && pcb != 4 ) begin
+        //if ( pcb != 3 && pcb != 4 ) begin
             // if the pcb uses the 68k reset pin to drive the reset line
-            reset_z80_n <= cpu_reset_n_o;
-        end
+            //reset_z80_n <= cpu_reset_n_o;
+        //end
         // write asserted and rising cpu clock
         if (  clk_10M == 1 && cpu_rw == 0 ) begin
             if ( tile_ofs_cs ) begin
