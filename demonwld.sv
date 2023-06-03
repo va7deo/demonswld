@@ -407,8 +407,8 @@ always @ * begin
 end
 
 always @ * begin
-        start1    <= joy0[8]  | joy1[7]  | key_start_1p;
-        start2    <= joy0[9]  | joy1[8]  | key_start_2p;
+        start1    <= joy0[8]  | joy1[8]  | key_start_1p;
+        start2    <= joy0[9]  | joy1[9]  | key_start_2p;
 
         coin_a    <= joy0[10] | joy1[10] | key_coin_a;
         coin_b    <= joy0[11] | joy1[11] | key_coin_b;
@@ -517,7 +517,6 @@ always @ (posedge clk_sys ) begin
     end else begin
         clk7_count <= clk7_count + 1;
     end
-    
     clk_14M <= ( clk14_count == 0);
     clk_14M_N <= ( clk14_count == 2);
     if ( clk14_count == 4 ) begin
@@ -525,7 +524,6 @@ always @ (posedge clk_sys ) begin
     end else begin
         clk14_count <= clk14_count + 1;
     end
-    
     clk_3_5M <= ( clk_3_5_count == 0);
     if ( clk_3_5_count == 19 ) begin
         clk_3_5_count <= 0;
@@ -578,7 +576,7 @@ video_timing video_timing (
     .vbl(vbl),
     .hsync(hsync),
     .vsync(vsync)
-    );
+);
 
 // PAUSE SYSTEM
 wire    pause_cpu;
