@@ -58,12 +58,12 @@ _(Demon's World / Horror Story)_
 
 ### Main Components
 
-| Chip                                                                   | Function         |
-| -----------------------------------------------------------------------|------------------|
-| [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU         |
-| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP              |
-| [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU        |
-| [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio       |
+| Chip                                                                   | Function   |
+| -----------------------------------------------------------------------|------------|
+| [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU   |
+| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP        |
+| [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU  |
+| [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio |
 
 ### Custom Components
 
@@ -113,9 +113,9 @@ _(Demon's World / Horror Story)_
 
 # PCB Information / Control Layout
 
-| Title            | Joystick | Service Menu                                                                                                 | Dip Switches                                                                                              | Shared Controls | Dip Default | PCB Information |
-|------------------|----------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------|-------------|-----------------|
-| **Horror Story** | 8-Way    | [**Service Menu**](https://github.com/va7deo/demonswld/assets/32810066/702bc056-e71f-463f-afd9-42cf568767a5) | [**Dip Sheet**](https://github.com/va7deo/demonswld/assets/32810066/9bb99fa2-59d7-4241-97e4-38cea4e38259) | Co-Op           | N/A         | WIP             |
+| Title                            | Joystick | Service Menu                                                                                                 | Dip Switches                                                                                              | Shared Controls | Dip Default | PCB Information |
+|----------------------------------|----------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------|-------------|-----------------|
+| **Demon's World / Horror Story** | 8-Way    | [**Service Menu**](https://github.com/va7deo/demonswld/assets/32810066/702bc056-e71f-463f-afd9-42cf568767a5) | [**Dip Sheet**](https://github.com/va7deo/demonswld/assets/32810066/9bb99fa2-59d7-4241-97e4-38cea4e38259) | Co-Op           | N/A         | WIP             |
 
 ### Keyboard Handler
 

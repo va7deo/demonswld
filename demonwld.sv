@@ -202,7 +202,7 @@ assign BUTTONS = 0;
 // 0         1         2         3          4         5         6   
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X  XXXXXXXX  XX    X X XXXXXXXX                          XXXXXXXX
+// X  XXXXXXXX    X   XXXX XXXXXXXX X     X    XX           XXXXXXXX
 
 wire [1:0] aspect_ratio = status[9:8];
 wire       orientation  = ~status[3];
@@ -788,28 +788,28 @@ always @ (posedge clk_70M) begin
 end
 
 TMS320C1X dsp
- (
-    .CLK(clk_70M),      // (X2/CLKIN) Crystal input internal oscillator or external system clock input
-    .RST_N(~reset),     //
-    .EN(1),             // (DEN) Data enable for device input data on D15-D0
+(
+    .CLK(clk_70M),          // (X2/CLKIN) Crystal input internal oscillator or external system clock input
+    .RST_N(~reset),
+    .EN(1),                 // (DEN) Data enable for device input data on D15-D0
 
-    .CE_F(clk_14M),     // Phased clocks for chip enable
-    .CE_R(clk_14M_N),   // Chip enable clock phase
+    .CE_F(clk_14M),         // Phased clocks for chip enable
+    .CE_R(clk_14M_N),       // Chip enable clock phase
 
-    .RS_N(~tms_reset),  // (RS) Reset for initializing the device
-    .INT_N(1),          // (INT) External interrupt input
-    .BIO_N(1),          // (BIO) External polling input
+    .RS_N(~tms_reset),      // (RS) Reset for initializing the device
+    .INT_N(1),              // (INT) External interrupt input
+    .BIO_N(1),              // (BIO) External polling input
 
-    .A(tms_addr),       // 
-    .DI(tms_din),       // 
-    .DO(tms_dout),      //
-    
+    .A(tms_addr),
+    .DI(tms_din),
+    .DO(tms_dout),
+
     .PC(tms_rom_addr),      // output reg [11:0] PC,
     .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
-    
-    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0
-    .DEN_N(tms_den_n),       // (DEN) Data enable for device input data on D15-D0
-    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction.
+
+    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0 (OUT instruction)
+    .DEN_N(tms_den_n),      // (DEN) Data enable for device input data on D15-D0 (IN instruction)
+    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction. (External instruction)
 );
 
 wire [11:0] tms_addr ;
@@ -1213,7 +1213,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(16)) tile_line_buffer (
 //    .data_b ( ),
     .q_b ( tile_fb_out )
     );
-    
+
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(16)) sprite_line_buffer (
     .clock_a ( clk_sys ),
     .address_a ( sprite_fb_addr_w ),
@@ -1226,7 +1226,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(16)) sprite_line_buffer (
     .wren_b ( 0 ),
 //    .data_b ( ),
     .q_b ( sprite_fb_out )
-    );
+);
 
 reg [9:0] x_ofs;
 reg [9:0] x;
@@ -1307,7 +1307,7 @@ wire [8:0] sprite_width     = { sprite_size_buf_dout[3:0], 3'b0 } /* synthesis k
 
 reg [7:0] sprite_buf_num;
 
-reg [1:0] vtotal_282_flag; 
+reg [1:0] vtotal_282_flag;
 
 always @ (posedge clk_sys) begin // Check System Vcount flag for 60Hz mode
     if ({crtc[2][7:0], 1'b1 } == 269)
@@ -1452,7 +1452,7 @@ always @ (posedge clk_sys) begin
             tile_draw_state <= 0;
         end else if ( draw_state == 3 ) begin
             if ( tile_draw_state == 0 ) begin
-                tile <=  { layer[1:0], curr_y[8:3], curr_x[8:3] };  // works
+                tile <=  { layer[1:0], curr_y[8:3], curr_x[8:3] }; // works
                 tile_draw_state <= 4'h1;
             end else if ( tile_draw_state == 1 ) begin
                 tile_draw_state <= 2;
@@ -1467,7 +1467,7 @@ always @ (posedge clk_sys) begin
                         // do we need to read another tile?
                         // last pixel of this tile changes based on flip direction
                         if ( curr_x[2:0] == ( tile_flip ? 0 : 7)  ) begin
-                            draw_state <= 3; 
+                            draw_state <= 3;
                             tile_draw_state <= 0;
                         end
                         x <= x + 1;
@@ -1495,7 +1495,7 @@ always @ (posedge clk_sys) begin
                     tile_rom_cs <= 0;
                 end
             end else if ( tile_draw_state == 5 ) begin
-                tile_fb_w <= 0; 
+                tile_fb_w <= 0;
                 tile_fb_addr_w   <= { y[0], 9'b0 } + x;
                 // force render of first layer.
                 // if layer == 4 then tile_pix == 0 is not transparent
@@ -1515,7 +1515,7 @@ always @ (posedge clk_sys) begin
                     // do we need to read another tile?
                     // last pixel of this tile changes based on flip direction
                     if ( curr_x[2:0] == ( tile_flip ? 0 : 7)  ) begin
-                        draw_state <= 3; 
+                        draw_state <= 3;
                         tile_draw_state <= 0;
                     end 
                     x <= x + 1;
@@ -1553,7 +1553,6 @@ reg draw_sprite;
 // [3:0] = tile colour index.
 
 // there are 10 70MHz cycles per pixel. clk7_count from 0-9
-// 
 
 // dac values based on 120 ohm driver for the resistor dac and 75 ohm output.  4.7k, 2.2k, 1k, 470, 220
 // modeled in spice
@@ -1635,7 +1634,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) ram_tile_buf (
     .address_b ( tile[13:0] ),    // only read the tile # for now
     .wren_b ( 0 ),
     .q_b ( tile_buf_dout )
-    );
+);
 
 // tile attribute ram.  each tile attribute is 2 16bit words
 // pppp ---- --cc cccc httt tttt tttt tttt = Tile number (0 - $7fff)
@@ -1651,8 +1650,8 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_h (
     .address_b ( tile[13:0] ),    // only read the tile # for now
     .wren_b ( 0 ),
     .q_b ( tile_attr_dout[31:16] )
-    );
-    
+);
+
 dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_l (
     .clock_a ( clk_10M ),
     .address_a ( curr_tile_ofs ),
@@ -1664,7 +1663,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_l (
     .address_b ( tile[13:0] ),    // only read the tile # for now
     .wren_b ( 0 ),
     .q_b ( tile_attr_dout[15:0] )
-    );
+);
 
 // sprite attribute ram.  each tile attribute is 4 16bit words
 // indirect access through offset register
@@ -1672,7 +1671,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_l (
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0 (
     .clock_a ( clk_10M ),
     .address_a ( curr_sprite_ofs[9:2] ),
-    .wren_a ( sprite_0_cs  & !cpu_rw),
+    .wren_a ( sprite_0_cs & !cpu_rw),
     .data_a ( cpu_dout ),
     .q_a ( sprite_0_dout ),
 
@@ -1680,7 +1679,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0 (
     .address_b ( sprite_num_copy ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_0_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0_buf (
     .clock_a ( clk_sys ),
@@ -1693,7 +1692,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0_buf (
     .address_b ( sprite_num ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_0_buf_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1 (
     .clock_a ( clk_10M ),
@@ -1706,7 +1705,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1 (
     .address_b ( sprite_num_copy ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_1_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1_buf (
     .clock_a ( clk_sys ),
@@ -1719,7 +1718,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1_buf (
     .address_b ( sprite_num ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_1_buf_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2 (
     .clock_a ( clk_10M ),
@@ -1732,7 +1731,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2 (
     .address_b ( sprite_num_copy ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_2_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2_buf (
     .clock_a ( clk_sys ),
@@ -1745,7 +1744,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2_buf (
     .address_b ( sprite_num ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_2_buf_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3 (
     .clock_a ( clk_10M ),
@@ -1758,7 +1757,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3 (
     .address_b ( sprite_num_copy ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_3_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3_buf (
     .clock_a ( clk_sys ),
@@ -1771,12 +1770,12 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3_buf (
     .address_b ( sprite_num ),
     .wren_b ( 0 ),
     .q_b ( sprite_attr_3_buf_dout[15:0] )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size (
     .clock_a ( clk_10M ),
     .address_a ( curr_sprite_ofs ),
-    .wren_a ( sprite_size_cs  & !cpu_rw),
+    .wren_a ( sprite_size_cs & !cpu_rw),
     .data_a ( cpu_dout ),
     .q_a ( sprite_size_cpu_dout ),
 
@@ -1784,7 +1783,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size (
     .address_b ( sprite_num_copy ),
     .wren_b ( 0 ),
     .q_b ( sprite_size_dout )
-    );
+);
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size_buf (
     .clock_a ( clk_sys ),
@@ -1797,8 +1796,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size_buf (
     .address_b ( sprite_size_addr ),
     .wren_b ( 0 ),
     .q_b ( sprite_size_buf_dout )
-    
-    );
+);
 
 
 // tiles  1024 15 bit values.  index is ( 6 bits from tile attribute, 4 bits from bitmap )
@@ -1808,28 +1806,28 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_l (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( tile_palette_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
+    .data_a ( cpu_dout[7:0] ),
     .q_a ( tile_palette_cpu_dout[7:0] ),
 
     .clock_b ( clk_sys ),
     .address_b ( tile_palette_addr ),
     .wren_b ( 0 ),
     .q_b ( tile_palette_dout[7:0] )
-    );
+);
 
 // background palette ram high
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_h (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( tile_palette_cs & !cpu_rw & !cpu_uds_n),
-    .data_a ( cpu_dout[15:8]  ),
+    .data_a ( cpu_dout[15:8] ),
     .q_a ( tile_palette_cpu_dout[15:8] ),
 
     .clock_b ( clk_sys ),
     .address_b ( tile_palette_addr ),
     .wren_b ( 0 ),
     .q_b ( tile_palette_dout[15:8] )
-    );
+);
 
 // sprite palette ram low
 // does this need to be byte addressable?
@@ -1837,28 +1835,28 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_l (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( sprite_palette_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
+    .data_a ( cpu_dout[7:0] ),
     .q_a ( sprite_palette_cpu_dout[7:0] ),
 
     .clock_b ( clk_sys ),
     .address_b ( sprite_palette_addr ),
     .wren_b ( 0 ),
     .q_b ( sprite_palette_dout[7:0] )
-    );
+);
 
 // background palette ram high
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_h (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( sprite_palette_cs & !cpu_rw & !cpu_uds_n),
-    .data_a ( cpu_dout[15:8]  ),
+    .data_a ( cpu_dout[15:8] ),
     .q_a ( sprite_palette_cpu_dout[15:8] ),
 
     .clock_b ( clk_sys ),
     .address_b ( sprite_palette_addr ),
     .wren_b ( 0 ),
     .q_b ( sprite_palette_dout[15:8] )
-    );
+);
 
 
 // main 68k ram low
@@ -1866,18 +1864,18 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8))    ram16kx8_L (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[14:1] ),
     .wren_a ( !cpu_rw & ram_cs & !cpu_lds_n ),
-    .data_a ( cpu_dout[7:0]  ),
+    .data_a ( cpu_dout[7:0] ),
     .q_a (  ram_dout[7:0] )
-    );
+);
 
 // main 68k ram high
 dual_port_ram #(.LEN(16384), .DATA_WIDTH(8))     ram16kx8_H (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[14:1] ),
     .wren_a ( !cpu_rw & ram_cs & !cpu_uds_n ),
-    .data_a ( cpu_dout[15:8]  ),
+    .data_a ( cpu_dout[15:8] ),
     .q_a (  ram_dout[15:8] )
-    );
+);
 
 
 //wire [15:0] z80_shared_addr = z80_addr - 16'h8000;
@@ -1889,7 +1887,7 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[12:1] ),
     .wren_a ( shared_ram_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
+    .data_a ( cpu_dout[7:0] ),
     .q_a ( cpu_shared_dout[7:0] ),
 
     .clock_b ( clk_3_5M ),  // z80 clock is 3.5M
@@ -1897,7 +1895,7 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram (
     .data_b ( z80_dout ),
     .wren_b ( sound_ram_1_cs & ~z80_wr_n ),
     .q_b ( z80_shared_dout )
-    );
+);
 
 reg [11:0] sprite_rb_addr;
 wire [15:0] sprite_rb_dout;
@@ -1906,27 +1904,27 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[12:1] ),
     .wren_a ( sprite_ram_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
+    .data_a ( cpu_dout[7:0] ),
     .q_a ( sprite_rb_dout[7:0] ),
 
     .clock_b ( clk_sys ),
     .address_b ( sprite_rb_addr ),
     .wren_b ( 0 ),
     .q_b ( sprite_rb_dout[7:0] )
-    );
+);
 
 dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_h (
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[12:1] ),
     .wren_a ( sprite_ram_cs & !cpu_rw & !cpu_uds_n),
-    .data_a ( cpu_dout[15:8]  ),
+    .data_a ( cpu_dout[15:8] ),
     .q_a ( cpu_shared_dout[15:8] ),
 
     .clock_b ( clk_sys ),
     .address_b ( sprite_rb_addr ),
     .wren_b ( 0 ),
     .q_b ( sprite_rb_dout[15:8] )
-    );
+);
 
 reg  [22:0] sdram_addr;
 reg  [31:0] sdram_data;
@@ -2049,7 +2047,7 @@ rom_controller rom_controller
     .sdram_ack(sdram_ack),
     .sdram_valid(sdram_valid),
     .sdram_q(sdram_q)
-  );
+);
 
 
 cache prog_cache
@@ -2068,8 +2066,7 @@ cache prog_cache
     .rom_addr(prog_cache_addr),
     .rom_valid(prog_cache_valid),
     .rom_data(prog_cache_data)
-
-); 
+);
 
 tile_cache tile_cache
 (
@@ -2087,7 +2084,6 @@ tile_cache tile_cache
     .rom_addr(tile_cache_addr),
     .rom_data(tile_cache_data),
     .rom_valid(tile_cache_valid)
-
 );
 
 endmodule
