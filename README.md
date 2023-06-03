@@ -117,10 +117,6 @@ _(Demon's World / Horror Story)_
 |------------------|----------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------|-------------|-----------------|
 | **Horror Story** | 8-Way    | [**Service Menu**](https://github.com/va7deo/demonswld/assets/32810066/702bc056-e71f-463f-afd9-42cf568767a5) | [**Dip Sheet**](https://github.com/va7deo/demonswld/assets/32810066/9bb99fa2-59d7-4241-97e4-38cea4e38259) | Co-Op           | N/A         | WIP             |
 
-<br>
-
-- Push button 3 may have no function in game, but corresponds to the original hardware and service menu.<br><br>
-
 ### Keyboard Handler
 
 <br>

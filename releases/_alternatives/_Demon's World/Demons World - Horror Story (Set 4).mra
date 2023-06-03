@@ -1,6 +1,6 @@
 <misterromdescription>
-    <name>Demon's World / Horror Story (Set 3)</name>
-    <setname>demonwld2</setname>
+    <name>Demon's World / Horror Story (Set 4)</name>
+    <setname>demonwld3</setname>
     <rbf>demonwld</rbf>
     <mameversion>0254</mameversion>
     <year>1989</year>
@@ -32,11 +32,11 @@
         <part>00</part>
     </rom>
 
-    <rom index="0" zip="demonwld2.zip|demonwld.zip" md5="None">
+    <rom index="0" zip="demonwld3.zip|demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
         <interleave output="16">
-            <part name="o16-10.rom" crc="036ee46c" map="01"/>
-            <part name="o16-09.rom" crc="bed746e3" map="10"/>
+            <part name="o16-10-2.bin" crc="84ee5218" map="01"/>
+            <part name="o16-09-2.bin" crc="cf474cb2" map="10"/>
         </interleave>
         <part repeat="0x40000"> FF</part>
 
@@ -60,8 +60,8 @@
         <!-- audiocpu - starts at 0x200000 -->
         <part name="rom11" crc="397eca1b"/>
 
-        <patch offset="0x0000145E">67 16</patch>
-        <patch offset="0x00001474">66 20</patch>
+        <patch offset="0x0000184A">67 16</patch>
+        <patch offset="0x00001860">66 22</patch>
         <patch offset="0x0000181C">4E 71</patch>
         <patch offset="0x00001824">60 0A</patch>
 
