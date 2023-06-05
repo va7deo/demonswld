@@ -84,8 +84,6 @@ always @(*) begin
         pcb_demonwld: begin
             prog_rom_cs       = m68k_cs( 'h000000, 18 );
 
-            ram_cs            = m68k_cs( 'hc00000, 14 );
-
             scroll_ofs_x_cs   = m68k_cs( 'he00000,  1 );
             scroll_ofs_y_cs   = m68k_cs( 'he00002,  1 );
             fcu_flip_cs       = m68k_cs( 'he00006,  1 );
@@ -110,12 +108,15 @@ always @(*) begin
             sprite_cs         = m68k_cs( 'ha00004,  1 );
             sprite_size_cs    = m68k_cs( 'ha00006,  1 );
 
+            ram_cs            = m68k_cs( 'hc00000, 14 ); // shared with dsp
+
             reset_z80_cs      = m68k_cs( 'he00008,  1 );
 
-            //dsp_ctrl_cs       = m68k_cs( 'he0000b,  1 );
-            //dsp_addr_cs       = m68k_cs( 4'h0 );
-            //dsp_r_cs          = m68k_cs( 4'h1 );
-            //dsp_bio_cs        = m68k_cs( 4'h3 );
+            dsp_ctrl_cs       = m68k_cs( 'he0000a,  1 );
+            
+//            dsp_addr_cs       = tms32010_cs( 4'h0 );
+//            dsp_r_cs          = tms32010( 4'h1 );
+//            dsp_bio_cs        = tms32010( 4'h3 );
 
             z80_p1_cs         = z80_cs( 8'h80 );
             z80_p2_cs         = z80_cs( 8'hc0 );

@@ -217,21 +217,19 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) internal_ram
 		bit INT_PEND;
 		
 		if (!RST_N) begin
-			IC <= 16'h7F80;
+			IC <= 16'h7F80; // NOP
 			IW <= '0;
 			PC <= '0;
 			STACK <= '{4{'0}};
 			BIO <= 0;
 			STATE <= '0;
 			INT_PEND <= 0;
-		end
-		else if (!RS_N) begin
-			IC <= 16'h7F80;
+		end else if (!RS_N) begin
+			IC <= 16'h7F80; // NOP
 			PC <= '0;
 			STATE <= '0;
 			INT_PEND <= 0;
-		end
-		else if (EN && CE_F) begin
+		end else if (EN && CE_F) begin
 			if (!STATE) begin
 				IC <=  ROM_Q;
 			end else if (DECI.IWR) begin
@@ -240,12 +238,17 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) internal_ram
 			
 			if (!STATE) begin
 				if (INT_PEND && !ST.INTM) begin
-					IC <= 16'hFF01;
+//					IC <= 16'hFF01;  // BZ  branch
+                    IC <= 16'h7F80; // NOP
+                    STACK[0] <= PC[11:0];
+                    STACK[1] <= STACK[0];
+                    STACK[2] <= STACK[1];
+                    STACK[3] <= STACK[2];
+                    PC <= 16'h0022;
 					INT_PEND <= 0;
 				end
 			end
-		end
-		else if (EN && CE_R) begin
+		end else if (EN && CE_R) begin
 			ACC_Z = ~|ACC;
 			ACC_N = ACC[31];
 			AR_Z = ~|AR[ST.ARP][8:0];
@@ -274,6 +277,14 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) internal_ram
 //				PC <= IW[11:0];
 //			else if (DECI.PCR)
 //				PC <= 12'h002;
+
+//	typedef enum bit[1:0] {
+//		PCU_NONE = 2'b00, 
+//		PCU_DATA = 2'b01, 
+//		PCU_BR   = 2'b10,
+//		PCU_ROUT = 2'b11
+//	} PCUpdate_t; 
+    
 			case (DECI.PCU)
 				PCU_DATA: PC <= DBI[11:0];
 				PCU_BR: if (COND) PC <= IW[11:0];

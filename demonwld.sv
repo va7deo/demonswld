@@ -192,7 +192,7 @@ assign VGA_SCALER = 0;
 assign HDMI_FREEZE = 0;
 
 assign AUDIO_MIX = 0;
-assign LED_USER = ioctl_download & cpu_a[0];
+assign LED_USER = ioctl_download & cpu_a[0] & & tms_addr & & tms_dout & & tms_rom_addr & & tms_rom_dout ;
 assign LED_DISK = 0;
 assign LED_POWER = 0;
 assign BUTTONS = 0;
@@ -755,7 +755,6 @@ always @ (posedge clk_sys) begin
         // tell 68k to wait for valid data. 0=ready 1=wait
         // always ack when it's not program rom
         dtack_n <= prog_rom_cs ? !prog_rom_data_valid : 0;
-        // add dsp_ctrl_cs to cpu_din
         // select cpu data input based on what is active
         cpu_din <= prog_rom_cs ? prog_rom_data :
             ram_cs ? ram_dout :
@@ -804,8 +803,8 @@ TMS320C1X dsp
     .CE_R(clk_14M_N),   // Chip enable clock phase
 
     .RS_N(~tms_reset),  // (RS) Reset for initializing the device
-    .INT_N(1),          // (INT) External interrupt input
-    .BIO_N(1),          // (BIO) External polling input
+    .INT_N(tms_int_n),  // (INT) External interrupt input
+    .BIO_N(tms_bio),  // (BIO) External polling input
 
     .A(tms_addr),       // 
     .DI(tms_din),       // 
@@ -825,6 +824,8 @@ wire [15:0] tms_dout ;
 wire        tms_we_n;
 wire        tms_den_n;
 wire        tms_men_n;
+wire        tms_bio;
+reg         tms_int_n;
 
 wire [15:0] cpu_shared_dout;
 wire  [7:0] z80_shared_dout;
@@ -1042,39 +1043,73 @@ reg [15:0] crtc[4];
 always @ (posedge clk_sys) begin
     if ( reset == 1 ) begin
         int_en <= 0;
-        reset_z80_n <= 0;
+        reset_z80_n <= 1;
+        tms_int_n <= 1;
+        tms_bio <= 1 ;
     end else begin
         if ( pcb != 3 && pcb != 4 ) begin
             // if the pcb uses the 68k reset pin to drive the reset line
             reset_z80_n <= cpu_reset_n_o;
         end
+        
+        if ( clk_14M == 1 ) begin
+//            shared_dsp_ram_w <= 0;
+            if ( tms_we_n == 0 ) begin // tms port write
+            
+//                case ( tms_addr[2:0] ) 
+//                    3'h0 : shared_dsp_ram_addr <= tms_dout[11:0] ;
+//                    3'h1 : begin
+//                                shared_dsp_ram_din <= tms_dout ;
+//                                shared_dsp_ram_w <= 1;
+//                             end
+//                    3'h3 : begin
+//                                if ( tms_dout[15] == 1 ) begin
+//                                    // clear
+//                                    tms_bio <= 1 ;
+//                                end else if ( tms_dout == 0 ) begin
+//                                    // assert
+//                                    tms_bio <= 0 ;
+//                                end
+//                             end
+//                endcase
+            end
+        end
+        
         // write asserted and rising cpu clock
         if (  clk_10M == 1 && cpu_rw == 0 ) begin
             if ( tile_ofs_cs ) begin
                 curr_tile_ofs <= cpu_dout;
             end
+            
             if ( int_en_cs ) begin
                 int_en <= cpu_dout[0];
             end
+            
             if ( crtc_cs ) begin
                 crtc[ cpu_a[2:1] ] <= cpu_dout;
             end
+            
             if ( bcu_flip_cs ) begin
                 tile_flip <= cpu_dout[0];
             end
+            
             if ( fcu_flip_cs ) begin
                 sprite_flip <= cpu_dout[15];
             end
+            
             if ( sprite_ofs_cs ) begin
                 // mask out valid range
                 curr_sprite_ofs <= { 6'b0, cpu_dout[9:0] };
             end
+            
             if ( scroll_ofs_x_cs ) begin
                 scroll_ofs_x <= cpu_dout;
             end
+            
             if ( scroll_ofs_y_cs ) begin
                 scroll_ofs_y <= cpu_dout;
             end
+            
             // x layer values are even addresses
             if ( scroll_cs ) begin
                 if ( cpu_a[1] == 0 ) begin
@@ -1083,15 +1118,24 @@ always @ (posedge clk_sys) begin
                     scroll_y[ cpu_a[3:2] ] <= cpu_dout[15:7];
                 end
             end
+            
             // offset needs to be auto-incremented
             if ( sprite_cs | sprite_size_cs ) begin
                 inc_sprite_ofs <= 1;
             end
+            
             if ( reset_z80_cs ) begin
                 // the pcb writes to a latch to control the reset 
                 reset_z80_n <= cpu_dout[0];
             end
+            
+            if ( dsp_ctrl_cs ) begin
+                // set/clear dsp interrupt line
+                tms_int_n <= cpu_dout[0];
+            end
+            
         end
+        
         // write lasts multiple cpu clocks so limit to one increment per write signal
         if ( inc_sprite_ofs == 1 && cpu_rw == 1 ) begin
             curr_sprite_ofs <= curr_sprite_ofs + 1;
@@ -1099,6 +1143,13 @@ always @ (posedge clk_sys) begin
         end
     end
 end
+
+reg         dsp_int_en;
+
+//wire [15:0] shared_dsp_ram_dout ;
+//reg  [15:0] shared_dsp_ram_din ;
+//reg  [11:0] shared_dsp_ram_addr ;
+//reg         shared_dsp_ram_w ;
 
 reg [15:0] scroll_x_total [3:0];
 reg [15:0] scroll_y_total [3:0];
@@ -1253,7 +1304,7 @@ reg [31:0] tile_attr;
 // [3:0] = tile colour index.
 
 reg [3:0] tile_priority_buf   [327:0];
-reg [3:0] sprite_priority_buf [327:0];
+reg [4:0] sprite_priority_buf [327:0];
 
 reg  [9:0] sprite_x;         // offset from left side of sprite
 reg  [9:0] sprite_y;
@@ -1350,10 +1401,15 @@ always @ (posedge clk_sys) begin
         end else if ( sprite_state == 7 ) begin
             sprite_fb_w <= 0;
             // draw if pixel value not zero and priority >= previous sprite data
-            if ( sprite_pix > 0 && sprite_priority_buf[sprite_buf_x] == 0 ) begin 
-                sprite_fb_din <= { 2'b11, sprite_priority, sprite_pal_addr, sprite_pix };
+//            if ( sprite_pix > 0 && sprite_priority > sprite_priority_buf[sprite_buf_x] ) begin 
+            if ( sprite_pix != 0 && ( sprite_priority == 0 || sprite_priority > sprite_priority_buf[sprite_buf_x] ) ) begin 
+                sprite_fb_din <= { 2'b11, sprite_priority[3:0], sprite_pal_addr, sprite_pix };
                 sprite_fb_addr_w <= { y[0], 9'b0 } + sprite_buf_x;
-                sprite_priority_buf[sprite_buf_x] <= sprite_priority;
+                if ( sprite_priority == 0 ) begin
+                    sprite_priority_buf[sprite_buf_x] <= { 1'b1, sprite_priority };
+                end else begin
+                    sprite_priority_buf[sprite_buf_x] <= { 1'b0, sprite_priority };
+                end
                 sprite_fb_w <= 1;
             end
             if ( sprite_x < ( sprite_width - 1 ) ) begin
@@ -1544,7 +1600,7 @@ end
 
 reg         download_en;
 reg [15:0]  download_index;
-reg [26:0]  download_addr;
+reg [11:0]  download_addr;
 reg [7:0]   download_data;
 reg         download_wr;
 wire        download_wait;
@@ -1561,8 +1617,6 @@ always @ (posedge clk_sys) begin
         tms_rom_w     <= ioctl_wr & ioctl_addr[0];
         tms_rom_din[ { ~ioctl_addr[0], 3'b111 } -: 8 ] <= ioctl_dout ;
     end 
-    
-    download_wr <= ioctl_wr & download_en;
 end
 
 reg         tms_rom_w;
@@ -1580,8 +1634,8 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
 
     .clock_b( clk_14M ),  // tms clock
     .address_b( tms_rom_addr ),
-    .data_a( ),
     .wren_b( 0 ),
+    .data_b( ),
     .q_b( tms_rom_dout )
 );
 
@@ -1827,24 +1881,43 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_h (
     .q_b ( sprite_palette_dout[15:8] )
     );
 
-
-// main 68k ram low
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(8))    ram16kx8_L (
-    .clock_a ( clk_10M ),
-    .address_a ( cpu_a[14:1] ),
-    .wren_a ( !cpu_rw & ram_cs & !cpu_lds_n ),
-    .data_a ( cpu_dout[7:0]  ),
-    .q_a (  ram_dout[7:0] )
-    );
+wire [15:0] shared_dsp_ram_dout ;
+reg  [15:0] shared_dsp_ram_din ;
+reg  [11:0] shared_dsp_ram_addr ;
+reg         shared_dsp_ram_w ;
 
 // main 68k ram high
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(8))     ram16kx8_H (
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H 
+(
     .clock_a ( clk_10M ),
     .address_a ( cpu_a[14:1] ),
     .wren_a ( !cpu_rw & ram_cs & !cpu_uds_n ),
     .data_a ( cpu_dout[15:8]  ),
-    .q_a (  ram_dout[15:8] )
-    );
+    .q_a (  ram_dout[15:8] ),
+    
+    .clock_b( clk_14M ),
+    .address_b( shared_dsp_ram_addr[11:0] ),
+    .wren_b( shared_dsp_ram_w ),
+    .data_b( shared_dsp_ram_din[15:8] ),
+    .q_b( shared_dsp_ram_dout[15:8] )
+);
+
+// main 68k ram low
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_L
+(
+    .clock_a( clk_10M ),
+    .address_a( cpu_a[14:1] ),
+    .wren_a( !cpu_rw & ram_cs & !cpu_lds_n ),
+    .data_a( cpu_dout[7:0]  ),
+    .q_a(  ram_dout[7:0] ),
+    
+    .clock_b( clk_14M ),
+    .address_b( shared_dsp_ram_addr[11:0] ),
+    .wren_b( shared_dsp_ram_w ),
+    .data_b( shared_dsp_ram_din[7:0] ),
+    .q_b( shared_dsp_ram_dout[7:0] )
+);
+
 
 
 //wire [15:0] z80_shared_addr = z80_addr - 16'h8000;
@@ -1852,47 +1925,50 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8))     ram16kx8_H (
 
 // z80 and 68k shared ram
 // 4k
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram (
-    .clock_a ( clk_10M ),
-    .address_a ( cpu_a[12:1] ),
-    .wren_a ( shared_ram_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
-    .q_a ( cpu_shared_dout[7:0] ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram 
+(
+    .clock_a( clk_10M ),
+    .address_a( cpu_a[12:1] ),
+    .wren_a( shared_ram_cs & !cpu_rw & !cpu_lds_n),
+    .data_a( cpu_dout[7:0]  ),
+    .q_a( cpu_shared_dout[7:0] ),
 
-    .clock_b ( clk_3_5M ),  // z80 clock is 3.5M
-    .address_b ( z80_addr[11:0] ),
-    .data_b ( z80_dout ),
-    .wren_b ( sound_ram_1_cs & ~z80_wr_n ),
-    .q_b ( z80_shared_dout )
+    .clock_b( clk_3_5M ),  // z80 clock is 3.5M
+    .address_b( z80_addr[11:0] ),
+    .data_b( z80_dout ),
+    .wren_b( sound_ram_1_cs & ~z80_wr_n ),
+    .q_b( z80_shared_dout )
     );
 
 reg [11:0] sprite_rb_addr;
 wire [15:0] sprite_rb_dout;
 
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l (
-    .clock_a ( clk_10M ),
-    .address_a ( cpu_a[12:1] ),
-    .wren_a ( sprite_ram_cs & !cpu_rw & !cpu_lds_n),
-    .data_a ( cpu_dout[7:0]  ),
-    .q_a ( sprite_rb_dout[7:0] ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l
+(
+    .clock_a( clk_10M ),
+    .address_a( cpu_a[12:1] ),
+    .wren_a( sprite_ram_cs & !cpu_rw & !cpu_lds_n),
+    .data_a( cpu_dout[7:0]  ),
+    .q_a( sprite_rb_dout[7:0] ),
 
-    .clock_b ( clk_sys ),
-    .address_b ( sprite_rb_addr ),
-    .wren_b ( 0 ),
-    .q_b ( sprite_rb_dout[7:0] )
+    .clock_b( clk_sys ),
+    .address_b( sprite_rb_addr ),
+    .wren_b( 0 ),
+    .q_b( sprite_rb_dout[7:0] )
     );
 
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_h (
-    .clock_a ( clk_10M ),
-    .address_a ( cpu_a[12:1] ),
-    .wren_a ( sprite_ram_cs & !cpu_rw & !cpu_uds_n),
-    .data_a ( cpu_dout[15:8]  ),
-    .q_a ( cpu_shared_dout[15:8] ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_h
+(
+    .clock_a( clk_10M ),
+    .address_a( cpu_a[12:1] ),
+    .wren_a( sprite_ram_cs & !cpu_rw & !cpu_uds_n),
+    .data_a( cpu_dout[15:8]  ),
+    .q_a( cpu_shared_dout[15:8] ),
 
-    .clock_b ( clk_sys ),
-    .address_b ( sprite_rb_addr ),
-    .wren_b ( 0 ),
-    .q_b ( sprite_rb_dout[15:8] )
+    .clock_b( clk_sys ),
+    .address_b( sprite_rb_addr ),
+    .wren_b( 0 ),
+    .q_b( sprite_rb_dout[15:8] )
     );
 
 reg  [22:0] sdram_addr;

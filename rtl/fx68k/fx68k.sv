@@ -133,20 +133,33 @@ module fx68k(
 	input clk,
 	
 	// These two signals don't need to be registered. They are not async reset.
-	input extReset,			// External sync reset on emulated system
-	input pwrUp,			// Asserted together with reset on emulated system coldstart	
-	input enPhi1, enPhi2,	// Clock enables. Next cycle is PHI1 or PHI2
+	input extReset,		// External sync reset on emulated system
+	input pwrUp,		// Asserted together with reset on emulated system coldstart	
+	input enPhi1, 
+    input enPhi2,	    // Clock enables. Next cycle is PHI1 or PHI2
 
-	output eRWn, output ASn, output LDSn, output UDSn,
-	output logic E, output VMAn,	
-	output FC0, output FC1, output FC2,
+	output eRWn, 
+    output ASn, 
+    output LDSn, 
+    output UDSn,
+	output logic E, 
+    output VMAn,	
+	output FC0, 
+    output FC1, 
+    output FC2,
 	output BGn,
-	output oRESETn, output oHALTEDn,
-	input DTACKn, input VPAn,
+	output oRESETn, 
+    output oHALTEDn,
+	input DTACKn, 
+    input VPAn,
 	input BERRn,
-	input BRn, BGACKn,
-	input IPL0n, input IPL1n, input IPL2n,
-	input [15:0] iEdb, output [15:0] oEdb,
+	input BRn, 
+    input BGACKn,
+	input IPL0n, 
+    input IPL1n, 
+    input IPL2n,
+	input [15:0] iEdb, 
+    output [15:0] oEdb,
 	output [23:1] eab
 	);
 	
