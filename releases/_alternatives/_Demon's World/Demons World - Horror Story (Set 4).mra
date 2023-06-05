@@ -1,6 +1,6 @@
 <misterromdescription>
-    <name>Demon's World / Horror Story (Set 5)</name>
-    <setname>demonwld4</setname>
+    <name>Demon's World / Horror Story (Set 4)</name>
+    <setname>demonwld3</setname>
     <rbf>demonwld</rbf>
     <mameversion>0254</mameversion>
     <year>1989</year>
@@ -23,20 +23,16 @@
         <dip name="Player" bits="12,13" ids="3,5,2,1"/>
         <dip name="No Hit" bits="14" ids="Off,On"/>
         <!-- TJUMP -->
-        <dip name="Region" bits="16,17" ids="Japan/Taito Corp,US/Taito America,World/Taito Japan,US/Toaplan"/>
+        <dip name="Region" bits="16,19" ids="Japan/Taito Corp,US/Taito America,World/Taito Japan,US/Toaplan"/>
     </switches>
 
-    <buttons names="Shot,Jump,-,P1 Start,P2 Start,Coin A,Coin B,Pause" default="A,B,X,Y,R,Start"/>
+    <buttons names="Shot,Jump,Rapid Shot,Slow Scroll,P1 Start,P2 Start,Coin A,Coin B,Pause" default="A,B,X,Y,R,L,Start,Select"/>
 
-    <rom index="1">
-        <part>00</part>
-    </rom>
-
-    <rom index="0" zip="demonwld4.zip|demonwld.zip" md5="None">
+    <rom index="0" zip="demonwld3.zip|demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
         <interleave output="16">
-            <part name="o16-10.bin" crc="6f7468e0" map="01"/>
-            <part name="o16-09.bin" crc="a572f5f7" map="10"/>
+            <part name="o16-10-2.bin" crc="84ee5218" map="01"/>
+            <part name="o16-09-2.bin" crc="cf474cb2" map="10"/>
         </interleave>
         <part repeat="0x40000"> FF</part>
 
@@ -60,12 +56,11 @@
         <!-- audiocpu - starts at 0x200000 -->
         <part name="rom11" crc="397eca1b"/>
 
-        <!-- dsp - starts at 0x208000 -->
-        <interleave output="16">
-            <part name="dsp_21.bin" crc="2d135376" map="01"/>
-            <part name="dsp_22.bin" crc="79389a71" map="10"/>
-        </interleave>
+        <patch offset="0x0000184A">67 16</patch>
+        <patch offset="0x00001860">66 22</patch>
+        <patch offset="0x0000181C">4E 71</patch>
+        <patch offset="0x00001824">60 0A</patch>
 
-        <!-- Total 0x209000 bytes - 2084 kBytes -->
+        <!-- Total 0x208000 bytes - 2084 kBytes -->
     </rom>
 </misterromdescription>

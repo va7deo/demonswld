@@ -1,29 +1,31 @@
 
 # Toaplan (Demon's World) FPGA Implementation
 
-FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on schematics and verified against an OutZone (TP-015 Conversion / TP-018) and Tatsujin (TP-013B).
+FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on OutZone schematics and verified against an OutZone (TP-015 Conversion / TP-018).
 
 The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. Currently in beta state, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
 
-![dwcore_github](https://github.com/va7deo/demonswld/assets/32810066/f8626176-ae42-4c07-8083-24b4930384a0)
+Rally Bike (TP-012), Tatsujin (TP-013B), Hellfire (TP-014), Zero Wing (TP-015), OutZone (TP-018), Vimana (TP-019), and Fire Shark (TP-017) are also Toaplan V1 titles. Separate repositories located [**here**](https://github.com/va7deo?tab=repositories).
+
+![demonwld](https://github.com/va7deo/demonswld/assets/32810066/a8d57b70-57a5-44d9-9a64-ea8cf519fc49)
 
 ## Supported Titles
 
-| Title                                                                                   | PCB<br>Number | Status      | Released | ROM Set     |
-|-----------------------------------------------------------------------------------------|---------------|-------------|----------|-------------|
-| [**Horror Story / Demon's World**](https://en.wikipedia.org/wiki/Demon%27s_World)       | TP-016        | Implemented | No       | .254 merged |
+| Title                                                                                   | PCB<br>Number | Status      | Released |
+|-----------------------------------------------------------------------------------------|---------------|-------------|----------|
+| [**Demon's World / Horror Story**](https://en.wikipedia.org/wiki/Demon%27s_World)       | TP-016        | Implemented | Yes      |
 
 ## External Modules
 
 | Module                                                                                | Function                                                                    | Author                                         |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|------------------------------------------------|
 | [**fx68k**](https://github.com/ijor/fx68k)                                            | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000)      | Jorge Cwik                                     |
-| [**tms320c1x**](https://github.com/srg320/TMS320C1X)                                  | [**Texas Instruments TMS320 DSP**](https://en.wikipedia.org/wiki/Zilog_Z80) | srg320                                         |
+| [**tms320c1x**](https://github.com/srg320/TMS320C1X)                                  | [**Texas Instruments TMS320 DSP**](https://en.wikipedia.org/wiki/Zilog_Z80) | srg320; modified by Darren Olafson             |
 | [**t80**](https://opencores.org/projects/t80)                                         | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)                | Daniel Wallner                                 |
 | [**jtopl2**](https://github.com/jotego/jtopl)                                         | [**Yamaha OPL2**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)            | Jose Tejada                                    |
 | [**yc_out**](https://github.com/MikeS11/MiSTerFPGA_YC_Encoder)                        | [**Y/C Video Module**](https://en.wikipedia.org/wiki/S-Video)               | Mike Simone                                    |
-| [**mem**](https://github.com/MiSTer-devel/Arcade-Rygar_MiSTer/tree/master/src/mem)    | SDRAM Controller / Rom Downloader                                           | Josh Bassett, modified by Darren Olafson       |
-| [**core_template**](https://github.com/MiSTer-devel/Template_MiSTer)                  | MiSTer Framework Template                                                   | sorgelig, modified by Darren Olafson / atrac17 |
+| [**mem**](https://github.com/MiSTer-devel/Arcade-Rygar_MiSTer/tree/master/src/mem)    | SDRAM Controller / Rom Downloader                                           | Josh Bassett; modified by Darren Olafson       |
+| [**core_template**](https://github.com/MiSTer-devel/Template_MiSTer)                  | MiSTer Framework Template                                                   | sorgelig; modified by Darren Olafson / atrac17 |
 
 # Known Issues / Tasks
 
@@ -35,7 +37,7 @@ The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. C
 
 | H-Sync       | V-Sync      | Source    | PCB<br>Number |
 |--------------|-------------|-----------|---------------|
-| 15.556938kHz | 55.161153Hz | DSLogic + | TP-016        |
+| 15.556938kHz | 55.161153Hz | DSLogic + | TP-018        |
 
 ### Crystal Oscillators
 
@@ -48,7 +50,7 @@ The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. C
 
 **Estimated geometry:**
 
-_(Horror Story)_
+_(Demon's World / Horror Story)_
 
     450 pixels/line  
   
@@ -56,12 +58,12 @@ _(Horror Story)_
 
 ### Main Components
 
-| Chip                                                                   | Use              |
-| -----------------------------------------------------------------------|------------------|
-| [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU         |
-| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP              |
-| [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU        |
-| [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio       |
+| Chip                                                                   | Function   |
+| -----------------------------------------------------------------------|------------|
+| [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU   |
+| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP        |
+| [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU  |
+| [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio |
 
 ### Custom Components
 
@@ -111,13 +113,9 @@ _(Horror Story)_
 
 # PCB Information / Control Layout
 
-| Title            | Joystick | Service Menu                                                                                                 | Dip Switches                                                                                              | Shared Controls | Dip Default | PCB Information |
-|------------------|----------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------|-------------|-----------------|
-| **Horror Story** | 8-Way    | [**Service Menu**](https://github.com/va7deo/demonswld/assets/32810066/702bc056-e71f-463f-afd9-42cf568767a5) | [**Dip Sheet**](https://github.com/va7deo/demonswld/assets/32810066/9bb99fa2-59d7-4241-97e4-38cea4e38259) | No              | N/A         | WIP             |
-
-<br>
-
-- Push button 3 may have no function in game, but corresponds to the original hardware and service menu.<br><br>
+| Title                            | Joystick | Service Menu                                                                                                 | Dip Switches                                                                                              | Shared Controls | Dip Default | PCB Information |
+|----------------------------------|----------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------|-------------|-----------------|
+| **Demon's World / Horror Story** | 8-Way    | [**Service Menu**](https://github.com/va7deo/demonswld/assets/32810066/702bc056-e71f-463f-afd9-42cf568767a5) | [**Dip Sheet**](https://github.com/va7deo/demonswld/assets/32810066/9bb99fa2-59d7-4241-97e4-38cea4e38259) | Co-Op           | N/A         | WIP             |
 
 ### Keyboard Handler
 

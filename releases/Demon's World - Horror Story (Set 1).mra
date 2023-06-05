@@ -1,7 +1,7 @@
 <misterromdescription>
     <name>Demon's World / Horror Story (Set 1)</name>
     <setname>demonwld</setname>
-    <rbf>demonwld  </rbf>
+    <rbf>demonwld</rbf>
     <mameversion>0254</mameversion>
     <year>1990</year>
     <manufacturer>Toaplan</manufacturer>
@@ -26,11 +26,7 @@
         <dip name="Region" bits="16" ids="Japan/Taito Corp,Toaplan"/>
     </switches>
 
-    <buttons names="Shot,Jump,-,P1 Start,P2 Start,Coin A,Coin B,Pause" default="A,B,X,Y,R,Start"/>
-
-    <rom index="1">
-        <part>00</part>
-    </rom>
+    <buttons names="Shot,Jump,Rapid Shot,Slow Scroll,P1 Start,P2 Start,Coin A,Coin B,Pause" default="A,B,X,Y,R,L,Start,Select"/>
 
     <rom index="0" zip="demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
