@@ -786,30 +786,54 @@ always @ (posedge clk_70M) begin
     end
 end
 
-TMS320C1X dsp
+IKA32010_controller main
 (
-    .CLK(clk_70M),          // (X2/CLKIN) Crystal input internal oscillator or external system clock input
-    .RST_N(~reset),
-    .EN(1),                 // (DEN) Data enable for device input data on D15-D0
+    .i_EMUCLK               ( clk_70M   ),
+    .i_CLKIN_PCEN_n         ( clk_14M   ),
 
-    .CE_F(clk_14M),         // Phased clocks for chip enable
-    .CE_R(clk_14M_N),       // Chip enable clock phase
+    .o_CLKOUT               ( 1'b1      ),
+    .o_CLKOUT_PCEN_n        ( 1'b1      ),
+    .o_CLKOUT_NCEN_n        ( 1'b1      ),
 
-    .RS_N(~tms_reset),  // (RS) Reset for initializing the device
-    .INT_N(tms_int_n),  // (INT) External interrupt input
-    .BIO_N(tms_bio),  // (BIO) External polling input
+    .i_RS_n                 ( ~reset    ),
 
-    .A(tms_addr),
-    .DI(tms_din),
-    .DO(tms_dout),
+    .o_MEN_n                ( tms_men_n ),
+    .o_DEN_n                ( tms_den_n ),
+    .o_WE_n                 ( tms_we_n  ),
 
-    .PC(tms_rom_addr),      // output reg [11:0] PC,
-    .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
+    .o_AOUT                 ( tms_addr  ),
+    .i_DIN                  ( tms_din   ),
+    .o_DOUT                 ( tms_dout  ),
+    .o_DOUT_OE_n            ( 1'b1      ),
 
-    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0 (OUT instruction)
-    .DEN_N(tms_den_n),      // (DEN) Data enable for device input data on D15-D0 (IN instruction)
-    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction. (External instruction)
+    .i_BIO_n                ( tms_bio   ),
+    .i_INT_n                ( tms_int_n )
 );
+
+//TMS320C1X dsp
+//(
+//    .CLK(clk_70M),          // (X2/CLKIN) Crystal input internal oscillator or external system clock input
+//    .RST_N(~reset),
+//    .EN(1),                 // (DEN) Data enable for device input data on D15-D0
+
+//    .CE_F(clk_14M),         // Phased clocks for chip enable
+//    .CE_R(clk_14M_N),       // Chip enable clock phase
+
+//    .RS_N(~tms_reset),      // (RS) Reset for initializing the device
+//    .INT_N(tms_int_n),      // (INT) External interrupt input
+//    .BIO_N(tms_bio),        // (BIO) External polling input
+
+//    .A(tms_addr),
+//    .DI(tms_din),
+//    .DO(tms_dout),
+
+//    .PC(tms_rom_addr),      // output reg [11:0] PC,
+//    .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
+
+//    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0 (OUT instruction)
+//    .DEN_N(tms_den_n),      // (DEN) Data enable for device input data on D15-D0 (IN instruction)
+//    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction. (External instruction)
+//);
 
 wire [11:0] tms_addr ;
 reg  [15:0] tms_din ;

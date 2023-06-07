@@ -29,9 +29,9 @@ module IKA32010_controller
     input   wire            i_INT_n
 );
 
-`define IKA32010_DISASSEMBLY
-`define IKA32010_DISASSEMBLY_SHOWID
-`define IKA32010_DEVICE_ID "ikakawa"
+//`define IKA32010_DISASSEMBLY
+//`define IKA32010_DISASSEMBLY_SHOWID
+//`define IKA32010_DEVICE_ID "ikakawa"
 
 
 ///////////////////////////////////////////////////////////
