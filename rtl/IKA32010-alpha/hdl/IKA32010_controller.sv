@@ -31,7 +31,7 @@ module IKA32010_controller
 
 //`define IKA32010_DISASSEMBLY
 //`define IKA32010_DISASSEMBLY_SHOWID
-//`define IKA32010_DEVICE_ID "ikakawa"
+`define IKA32010_DEVICE_ID "ikakawa"
 
 
 ///////////////////////////////////////////////////////////
@@ -639,10 +639,12 @@ end
 int     pc_z;
 int     rst_cyc = 0;
 int     tbl_cyc = 0;
-string  disasm, num_data;
+
 
 //NOP, ABS
 function void disasm_type0;
+    string  disasm, num_data;
+
     input   string  mnemonic;
     input   [11:0]  pc;
     disasm = "";
@@ -659,6 +661,8 @@ endfunction
 
 //ADD, LAC, SUB...
 function void disasm_type1;
+    string  disasm, num_data;
+    
     input   string  mnemonic;
     input   [15:0]  opcodereg;
     input   [11:0]  pc;
@@ -913,8 +917,7 @@ always @(*) begin
 
     if(ex_state == 3'b000) begin
         //No change
-        disasm = {"IKA32010_", `IKA32010_DEVICE_ID, ": RESET\n"};
-        $display(disasm);
+        $display({"IKA32010_", `IKA32010_DEVICE_ID, ": RESET\n"});
     end
 
     else if(ex_state == 3'b001) begin
