@@ -1,11 +1,11 @@
 
 # Toaplan (Demon's World) FPGA Implementation
 
-FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on OutZone schematics and verified against an OutZone (TP-015 Conversion / TP-018).
+FPGA compatible core of Toaplan Version 1 arcade hardware for [**MiSTerFPGA**](https://github.com/MiSTer-devel/Main_MiSTer/wiki) written by [**Darren Olafson**](https://twitter.com/Darren__O). Based on OutZone schematics and verified against OutZone (TP-015 Conversion / TP-018).
 
-The intent is for this core to be a 1:1 implementation of Toaplan V1 hardware. Currently in beta state, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
+The intent is for this core to be a 1:1 **game play** FPGA implementation of Toaplan V1 hardware. Currently in beta state, this core is in active development with assistance from [**atrac17**](https://github.com/atrac17).
 
-Rally Bike (TP-012), Tatsujin (TP-013B), Hellfire (TP-014), Zero Wing (TP-015), OutZone (TP-018), Vimana (TP-019), and Fire Shark (TP-017) are also Toaplan V1 titles. Separate repositories located [**here**](https://github.com/va7deo?tab=repositories).
+Rally Bike (TP-012), Tatsujin (TP-013B), Hellfire (TP-014), Zero Wing (TP-015), OutZone (TP-018), Vimana (TP-019), and Fire Shark (TP-017) are also Toaplan V1 titles and have separate repositories located [**here**](https://github.com/va7deo?tab=repositories).
 
 ![demonwld](https://github.com/va7deo/demonswld/assets/32810066/a8d57b70-57a5-44d9-9a64-ea8cf519fc49)
 
@@ -20,7 +20,6 @@ Rally Bike (TP-012), Tatsujin (TP-013B), Hellfire (TP-014), Zero Wing (TP-015), 
 | Module                                                                                | Function                                                                    | Author                                         |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|------------------------------------------------|
 | [**fx68k**](https://github.com/ijor/fx68k)                                            | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000)      | Jorge Cwik                                     |
-| [**tms320c1x**](https://github.com/srg320/TMS320C1X)                                  | [**Texas Instruments TMS320 DSP**](https://en.wikipedia.org/wiki/Zilog_Z80) | srg320; modified by Darren Olafson             |
 | [**t80**](https://opencores.org/projects/t80)                                         | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)                | Daniel Wallner                                 |
 | [**jtopl2**](https://github.com/jotego/jtopl)                                         | [**Yamaha OPL2**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)            | Jose Tejada                                    |
 | [**yc_out**](https://github.com/MikeS11/MiSTerFPGA_YC_Encoder)                        | [**Y/C Video Module**](https://en.wikipedia.org/wiki/S-Video)               | Mike Simone                                    |
@@ -30,6 +29,7 @@ Rally Bike (TP-012), Tatsujin (TP-013B), Hellfire (TP-014), Zero Wing (TP-015), 
 # Known Issues / Tasks
 
 - [**OPL2 Audio**](https://github.com/jotego/jtopl/issues/11)  **[Issue]**  
+- Address timing issues with jtframe_mixer module usage; false paths added to sdc  **[Task]**  
 
 # PCB Check List
 
@@ -61,7 +61,6 @@ _(Demon's World / Horror Story)_
 | Chip                                                                   | Function   |
 | -----------------------------------------------------------------------|------------|
 | [**Motorola 68000 CPU**](https://en.wikipedia.org/wiki/Motorola_68000) | Main CPU   |
-| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP        |
 | [**Zilog Z80 CPU**](https://en.wikipedia.org/wiki/Zilog_Z80)           | Sound CPU  |
 | [**Yamaha YM3812**](https://en.wikipedia.org/wiki/Yamaha_OPL#OPL2)     | OPL2 Audio |
 
@@ -74,40 +73,58 @@ _(Demon's World / Horror Story)_
 | **FDA MN53007T0A / TOAPLAN-02 M70H005 / GXL-02** | Sprite Counter     |
 | **BCU-02**                                       | Tile Map Generator | <br>
 
-# Core Features
+### Additional Components
+
+| Chip                                                                   | Function         | PCB<br>Number | Status          | Notes                                                                                                                                                                                         |
+|------------------------------------------------------------------------|------------------|---------------|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [**TMS32010**](https://en.wikipedia.org/wiki/Texas_Instruments_TMS320) | DSP & Protection | **TP-016**    | Not Implemented | Reviewing the MAME .36b10 Toaplan1 driver it was discovered that the DPS's served as protection; currently ROM 10 and post checks are patched in the MRA files until a TMS32010 is available. |
+
+### Screen Flip / Cocktail Support
+
+| Title                            | Screen Flip | Cocktail Support | Implemented |
+|----------------------------------|-------------|------------------|-------------|
+| **Demon's World / Horror Story** | Dipswitch   | No               | Yes         | <br>
+
+# Core Options / Additional Features
+
+### Scroll Debug Option
+
+- Additional toggle to enable a fourth button for the "Slow Scroll" feature. See the "PCB Information" section for further information.
 
 ### Refresh Rate Compatibility Option
 
-- Video timings can be modified if you experience sync issues with CRT or modern displays; this will alter gameplay from it's original state.
+- Additional toggle to modify video timings; only use for sync issues with an analog display or scroll jitter on a modern display. This is due to the hardware's low refresh rate, enabling the toggle alters gameplay from it's original state.
 
 | Refresh Rate      | Timing Parameter     | HTOTAL | VTOTAL |
 |-------------------|----------------------|--------|--------|
 | 15.56kHz / 55.2Hz | TP-016               | 450    | 282    |
 | 15.73kHz / 59.8Hz | NTSC                 | 445    | 264    |
 
-### P1/P2 Input Swap Option
+### P1/P2 Input Swap Options
 
-- There is a toggle to swap inputs from Player 1 to Player 2. This only swaps inputs for the joystick, it does not effect keyboard inputs.
+- Additional toggle to swap inputs from Player 1 to Player 2. This swaps inputs for the joystick and keyboard assignments.
 
 ### Audio Options
 
-- There is a toggle to disable playback of OPL2 audio.
+- Additional toggle to adjust the volume gain or disable playback of OPL2 audio.
 
 ### Overclock Options
 
-- There is a toggle to increase the M68000 frequency from 10MHz to 17.5MHz; this will alter gameplay from it's original state.
+- Additional toggle to increase the M68000 frequency from 10MHz to 17.5MHz; this will alter gameplay from it's original state and address any undesired native slow down.
 
-### Native Y/C Output
+### Native Y/C Output ( 15kHz Displays )
 
 - Native Y/C ouput is possible with the [**analog I/O rev 6.1 pcb**](https://github.com/MiSTer-devel/Main_MiSTer/wiki/IO-Board). Using the following cables, [**HD-15 to BNC cable**](https://www.amazon.com/StarTech-com-Coax-RGBHV-Monitor-Cable/dp/B0033AF5Y0/) will transmit Y/C over the green and red lines. Choose an appropriate adapter to feed [**Y/C (S-Video)**](https://www.amazon.com/MEIRIYFA-Splitter-Extension-Monitors-Transmission/dp/B09N19XZJQ) to your display.
 
-### H/V Adjustments
+### H/V Adjustments ( 15kHz Displays )
 
-- There are two H/V toggles, H/V-sync positioning adjust and H/V-sync width adjust. Positioning will move the display for centering on CRT display. The sync width adjust can be used to for sync issues (rolling) without modifying the video timings.
+- Additional toggle for horizontal and vertical centering; the "H/V-Sync Pos Adj" toggles move the image to assist in screen centering if you choose not to adjust your displays settings.
 
-### Scandoubler Options
+- Additional toggle for horizontal and vertical sync width adjust; the "H/V-Sync Width Adj" toggles address "rolling sync" and "flagging" on certain displays.
 
-- Additional toggle to enable the scandoubler without changing ini settings and new scanline option for 100% is available, this draws a black line every other frame. Below is an example.
+### Scandoubler Options ( 31kHz Displays )
+
+- Additional toggle to enable the scandoubler (31kHz) without changing ini settings and a new scanline option for 100% is available; the new scanline setting draws a black line every other frame. Scandoubler options pass over HDMI as well.
 
 <table><tr><th>Scandoubler Fx</th><th>Scanlines 25%</th><th>Scanlines 50%</th><th>Scanlines 75%</th><th>Scanlines 100%</th><tr><td><br> <p align="center"><img width="160" height="120" src="https://github.com/va7deo/demonswld/assets/32810066/cc421ccf-b3f9-4db5-b68f-49df19dd2f8b"></td><td><br> <p align="center"><img width="160" height="120" src="https://github.com/va7deo/demonswld/assets/32810066/72df8c59-1d5c-42f0-bdca-2936178c08ed"></td><td><br> <p align="center"><img width="160" height="120" src="https://github.com/va7deo/demonswld/assets/32810066/91f985c3-54ab-499c-96ad-6b6879bbb860"></td><td><br> <p align="center"><img width="160" height="120" src="https://github.com/va7deo/demonswld/assets/32810066/4e429ad7-1371-4504-a3cb-6da0d54140ca"></td><td><br> <p align="center"><img width="160" height="120" src="https://github.com/va7deo/demonswld/assets/32810066/1729c2c9-cdf6-428e-b594-9f54eb126321"></td></tr></table> <br>
 
