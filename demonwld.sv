@@ -1053,6 +1053,7 @@ always @ (posedge clk_sys ) begin
         int_ack <= 0;
     end else begin
         vbl_sr <= { vbl_sr[0], vbl };
+        // vbl_sr <= { vbl_sr[0], ( vc == 224 ) };
         if ( clk_10M == 1 ) begin
             int_ack <= ( cpu_as_n == 0 ) && ( cpu_fc == 3'b111 ); // cpu acknowledged the interrupt
         end
@@ -1310,7 +1311,6 @@ wire [9:0] sprite_buf_x = sprite_flip ? 320 - (sprite_x + sprite_pos_x ) : sprit
 
 reg [3:0] draw_state;
 reg [3:0] sprite_state;
-reg [3:0] tile_copy_state;
 reg [3:0] sprite_copy_state;
 
 // pixel 4 bit colour
@@ -1372,7 +1372,6 @@ always @ (posedge clk_sys) begin
         draw_state <= 0;
         sprite_rom_cs <= 0;
         tile_rom_cs <= 0;
-        tile_copy_state <= 0;
         sprite_copy_state <= 0;
         tile_draw_state <= 0;
     end else begin
@@ -1433,16 +1432,10 @@ always @ (posedge clk_sys) begin
         end else if ( sprite_state == 7 ) begin
             sprite_fb_w <= 0;
             // draw if pixel value not zero and priority >= previous sprite data
-//            if ( sprite_pix > 0 && sprite_priority > sprite_priority_buf[sprite_buf_x] ) begin 
-//            if ( sprite_pix != 0 && ( sprite_priority == 0 || sprite_priority >= sprite_priority_buf[sprite_buf_x] ) ) begin 
             if ( sprite_pix != 0 ) begin 
                 sprite_fb_din <= { 2'b11, sprite_priority[3:0], sprite_pal_addr, sprite_pix };
                 sprite_fb_addr_w <= { y[0], 9'b0 } + sprite_buf_x;
-//                if ( sprite_priority == 0 ) begin
-//                    sprite_priority_buf[sprite_buf_x] <= { 1'b1, sprite_priority };
-//                end else begin
-                    sprite_priority_buf[sprite_buf_x] <= { 1'b0, sprite_priority };
-//                end
+                sprite_priority_buf[sprite_buf_x] <= { 1'b0, sprite_priority };
                 sprite_fb_w <= 1;
             end
             if ( sprite_x < ( sprite_width - 1 ) ) begin
@@ -1460,21 +1453,6 @@ always @ (posedge clk_sys) begin
                 // tile state machine will reset sprite_state when line completes.
                 sprite_state <= 15; // done
             end
-        end
-        // copy tile ram and scroll info
-        // not sure if this is needed. need to check to see when tile ram is updated.
-        if (  tile_copy_state == 0 && vc == 256  ) begin
-            tile_copy_state <= 1;
-        end else begin
-            // copy scroll registers
-            scroll_x_latch[0] <= scroll_x[0] - scroll_ofs_x;
-            scroll_x_latch[1] <= scroll_x[1] - scroll_ofs_x;
-            scroll_x_latch[2] <= scroll_x[2] - scroll_ofs_x;
-            scroll_x_latch[3] <= scroll_x[3] - scroll_ofs_x;
-            scroll_y_latch[0] <= scroll_y[0] - scroll_ofs_y;
-            scroll_y_latch[1] <= scroll_y[1] - scroll_ofs_y;
-            scroll_y_latch[2] <= scroll_y[2] - scroll_ofs_y;
-            scroll_y_latch[3] <= scroll_y[3] - scroll_ofs_y;
         end
         // copy sprite attr/size to buffer
         if (  sprite_copy_state == 0 && vc == 240  ) begin
@@ -1495,6 +1473,14 @@ always @ (posedge clk_sys) begin
         end
         // tile state machine
         if ( draw_state == 0 && vc == ({ crtc[2][7:0], 1'b1 } - (status[19] ? (vtotal_282_flag ? 5'd19 : 4'd7) : 3'd0)) ) begin // 282 Lines standard (263 Lines for 60Hz)
+            scroll_x_latch[0] <= scroll_x[0] - scroll_ofs_x;
+            scroll_x_latch[1] <= scroll_x[1] - scroll_ofs_x;
+            scroll_x_latch[2] <= scroll_x[2] - scroll_ofs_x;
+            scroll_x_latch[3] <= scroll_x[3] - scroll_ofs_x;
+            scroll_y_latch[0] <= scroll_y[0] - scroll_ofs_y;
+            scroll_y_latch[1] <= scroll_y[1] - scroll_ofs_y;
+            scroll_y_latch[2] <= scroll_y[2] - scroll_ofs_y;
+            scroll_y_latch[3] <= scroll_y[3] - scroll_ofs_y;
             layer <= 4; // layer 4 is layer 0 but draws hidden and transparent
             y <= 0;
             draw_state <= 2;
@@ -1514,8 +1500,9 @@ always @ (posedge clk_sys) begin
                 tile_draw_state <= 2;
             end else if ( tile_draw_state == 2 ) begin
                 // latch attribute
-                tile_attr <= tile_attr_dout;
-                if ( layer == 4 || tile_attr_dout[15] == 0 ) begin
+                // tile_attr <= tile_attr_dout;
+                tile_attr <= tile_buf_dout ;
+                if ( layer == 4 || tile_buf_dout[15] == 0 ) begin
                     tile_draw_state <= 3;
                 end else begin
                     if ( x < 320 ) begin// 319
@@ -1561,7 +1548,8 @@ always @ (posedge clk_sys) begin
                     //fb_din <= { layer[1:0], tile_priority, tile_palette_idx,  tile_pix };
                     fb_din <= { layer[1:0], 4'b0, tile_palette_idx,  tile_pix };
                     tile_fb_w <= 1;
-                end else if (tile_hidden == 0 && tile_pix > 0 && tile_priority > 0 && tile_priority >= tile_priority_buf[x] ) begin
+                //end else if (tile_hidden == 0 && tile_pix > 0 && tile_priority > 0 && tile_priority >= tile_priority_buf[x] ) begin
+                end else if (tile_hidden == 0 && tile_pix > 0 && tile_priority > tile_priority_buf[x] ) begin
                     tile_priority_buf[x] <= tile_priority;
                     // if tile hidden then make the pallette index 0. ie transparent
                     fb_din <= { layer[1:0], tile_priority, tile_palette_idx,  tile_pix };
@@ -1649,14 +1637,14 @@ always @ (posedge clk_sys) begin
         download_addr <= ioctl_addr[11:1] ;
         tms_rom_w     <= ioctl_wr & ioctl_addr[0];
         tms_rom_din[ { ~ioctl_addr[0], 3'b111 } -: 8 ] <= ioctl_dout ;
-    end 
+    end
 end
 
 reg         tms_rom_w;
 wire [11:0] tms_rom_addr ;
 wire [15:0] tms_rom_din ;
 wire [15:0] tms_rom_dout ;
- 
+
 dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
 (
     .clock_a( clk_sys ), // rom download. ioctl stuff. 
@@ -1672,29 +1660,70 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
     .q_b( tms_rom_dout )
 );
 
+//    // copy sprite attr/size to buffer
+//    if (  sprite_copy_state == 0 && vc == 240  ) begin
+//        sprite_copy_state <= 1;
+//        sprite_buf_w <= 0;
+//        sprite_num_copy <= 8'h00;
+//    end else if ( sprite_copy_state == 1 ) begin
+//        sprite_num_copy <= sprite_num_copy + 1;
+//        sprite_buf_num <= sprite_num_copy;
+//        sprite_buf_w <= 1;
+//        // wait for read from source
+//        if ( sprite_num_copy == 8'hff ) begin
+//            sprite_copy_state <= 2;
+//        end
+//    end else if ( sprite_copy_state == 2 ) begin
+//        sprite_buf_w <= 0;
+//        sprite_copy_state <= 0;
+//    end
+
 // tile data buffer
 
-reg tile_buf_w;
-reg [31:0] tile_buf_din;
-reg [31:0] tile_buf_dout;
-reg [13:0] tile_buf_addr;
+reg         tile_buf_w;
+reg  [31:0] tile_buf_din;
+reg  [31:0] tile_buf_dout;
+reg  [13:0] tile_buf_count;
+reg  [13:0] tile_buf_addr;
 
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) ram_tile_buf (
-    .clock_a ( clk_sys ),
-    .address_a ( tile[13:0] ),
-    .wren_a ( tile_buf_w ),
-    .data_a ( tile_attr_dout ),
+reg   [2:0] tile_copy_state;
 
-    .clock_b ( clk_sys ),
-    .address_b ( tile[13:0] ),    // only read the tile # for now
-    .wren_b ( 0 ),
-    .q_b ( tile_buf_dout )
-    );
+always @ (posedge clk_sys) begin
+    if ( vc < 240 ) begin
+        tile_buf_count <= 0;
+        tile_copy_state <= 0;
+        tile_buf_w <= 0;
+    end else if ( tile_copy_state == 0 ) begin
+        tile_buf_count <= tile_buf_count + 1;
+
+        tile_buf_addr <= tile_buf_count ;
+        tile_buf_w <= 1 ;
+
+        if ( &tile_buf_count ) begin
+            tile_copy_state <= 1;
+        end
+    end else if ( tile_copy_state == 1 ) begin
+        tile_buf_w <= 0;
+    end
+end
+
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) ram_tile_buf
+(
+    .clock_a( clk_sys ),
+    .address_a( tile_buf_addr ),
+    .wren_a( tile_buf_w ),
+    .data_a( tile_attr_dout ),
+
+    .clock_b( clk_sys ),
+    .address_b( tile[13:0] ),    // only read the tile # for now
+    .wren_b( 0 ),
+    .q_b( tile_buf_dout )
+);
 
 // tile attribute ram.  each tile attribute is 2 16bit words
 // pppp ---- --cc cccc httt tttt tttt tttt = Tile number (0 - $7fff)
 // indirect access through offset register
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_h (
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_h (
     .clock_a ( clk_10M ),
     .address_a ( curr_tile_ofs ),
     .wren_a ( tile_attr_cs & !cpu_rw ),
@@ -1707,7 +1736,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_h (
     .q_b ( tile_attr_dout[31:16] )
     );
     
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_l (
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_l (
     .clock_a ( clk_10M ),
     .address_a ( curr_tile_ofs ),
     .wren_a ( tile_num_cs & !cpu_rw ),
@@ -1715,7 +1744,8 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) ram_tile_l (
     .q_a ( cpu_tile_dout_num ),
 
     .clock_b ( clk_sys ),
-    .address_b ( tile[13:0] ),    // only read the tile # for now
+//    .address_b ( tile[13:0] ),    // only read the tile # for now
+    .address_b( tile_buf_count ),
     .wren_b ( 0 ),
     .q_b ( tile_attr_dout[15:0] )
     );
