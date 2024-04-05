@@ -56,11 +56,12 @@
         <!-- audiocpu - starts at 0x200000 -->
         <part name="o16-11.bin" crc="dbe08c85"/>
 
-        <patch offset="0x0000145E">67 16</patch>
-        <patch offset="0x00001474">66 20</patch>
-        <patch offset="0x00001430">4E 71</patch>
-        <patch offset="0x00001438">60 0A</patch>
+        <!-- dsp - starts at 0x208000 -->
+        <interleave output="16">
+            <part name="dsp_21.bin" crc="2d135376" map="01"/>
+            <part name="dsp_22.bin" crc="79389a71" map="10"/>
+        </interleave>
 
-        <!-- Total 0x208000 bytes - 2084 kBytes -->
+        <!-- Total 0x209000 bytes - 2084 kBytes -->
     </rom>
 </misterromdescription>

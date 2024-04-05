@@ -3,7 +3,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE demonwld.sv
 set_global_assignment -name QIP_FILE rtl/t80/T80.qip
 set_global_assignment -name QIP_FILE rtl/fx68k/fx68k.qip
 set_global_assignment -name QIP_FILE rtl/jtopl/jt26.qip
-set_global_assignment -name QIP_FILE rtl/TMS320C1X/TMS320C1X.qip
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/IKA32010/hdl/IKA32010_controller.sv
 set_global_assignment -name VERILOG_FILE rtl/video_timing.v
 set_global_assignment -name QIP_FILE sys/pll_q17.qip
 set_global_assignment -name QIP_FILE sys/pll_hdmi.qip

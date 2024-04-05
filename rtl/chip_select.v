@@ -33,9 +33,6 @@ module chip_select
     output       fcu_flip_cs,
     output       reset_z80_cs,
     output       dsp_ctrl_cs,
-    output       dsp_addr_cs,
-    output       dsp_r_cs,
-    output       dsp_bio_cs,
 
     // Z80 selects
     output       z80_p1_cs,
@@ -71,11 +68,6 @@ always @ (*) begin
     scroll_y_offset = 16;
 
     prog_rom_cs       = m68k_cs( 24'h000000, 24'h03ffff );
-    ram_cs            = m68k_cs( 24'hc00000, 24'hc03fff );
-
-    scroll_ofs_x_cs   = m68k_cs( 24'he00000, 24'he00001 );
-    scroll_ofs_y_cs   = m68k_cs( 24'he00002, 24'he00003 );
-    fcu_flip_cs       = m68k_cs( 24'he00006, 24'he00007 );
 
     vblank_cs         = m68k_cs( 24'h400000, 24'h400001 );
     int_en_cs         = m68k_cs( 24'h400002, 24'h400003 );
@@ -97,12 +89,15 @@ always @ (*) begin
     sprite_cs         = m68k_cs( 24'ha00004, 24'ha00005 );
     sprite_size_cs    = m68k_cs( 24'ha00006, 24'ha00007 );
 
+    ram_cs            = m68k_cs( 24'hc00000, 24'hc03fff );
+
+    scroll_ofs_x_cs   = m68k_cs( 24'he00000, 24'he00001 );
+    scroll_ofs_y_cs   = m68k_cs( 24'he00002, 24'he00003 );
+    fcu_flip_cs       = m68k_cs( 24'he00006, 24'he00007 );
+
     reset_z80_cs      = m68k_cs( 24'he00008, 24'he00009 );
 
-    //dsp_ctrl_cs       = m68k_cs( 24'he0000a, 24'he0000b );
-    //dsp_addr_cs       = m68k_cs( 4'h0 );
-    //dsp_r_cs          = m68k_cs( 4'h1 );
-    //dsp_bio_cs        = m68k_cs( 4'h3 );
+    dsp_ctrl_cs       = m68k_cs( 24'he0000a, 24'he0000b );
 
     z80_p1_cs         = z80_cs( 8'h80 );
     z80_p2_cs         = z80_cs( 8'hc0 );

@@ -770,55 +770,6 @@ always @ (posedge clk_sys) begin
     end
 end
 
-wire        tms_reset;
-reg   [7:0] tms_reset_count;
-
-always @ (posedge clk_70M) begin
-    if ( reset == 1 ) begin
-        tms_reset_count <= 0;
-        tms_reset <= 1 ;
-    end else begin
-        if ( tms_reset_count < 50 ) begin
-            tms_reset_count <= tms_reset_count + 1;
-        end else begin
-            tms_reset <= 0 ;
-        end
-    end
-end
-
-TMS320C1X dsp
-(
-    .CLK(clk_70M),          // (X2/CLKIN) Crystal input internal oscillator or external system clock input
-    .RST_N(~reset),
-    .EN(1),                 // (DEN) Data enable for device input data on D15-D0
-
-    .CE_F(clk_14M),         // Phased clocks for chip enable
-    .CE_R(clk_14M_N),       // Chip enable clock phase
-
-    .RS_N(~tms_reset),  // (RS) Reset for initializing the device
-    .INT_N(tms_int_n),  // (INT) External interrupt input
-    .BIO_N(tms_bio),  // (BIO) External polling input
-
-    .A(tms_addr),
-    .DI(tms_din),
-    .DO(tms_dout),
-
-    .PC(tms_rom_addr),      // output reg [11:0] PC,
-    .ROM_Q(tms_rom_dout),   // input      [15:0] ROM_Q,
-
-    .WE_N(tms_we_n),        // (WE) Write enable for device output data on D15-D0 (OUT instruction)
-    .DEN_N(tms_den_n),      // (DEN) Data enable for device input data on D15-D0 (IN instruction)
-    .MEN_N(tms_men_n)       // (MEN) Memory enable indicates that D15-D0 will accept external memory instruction. (External instruction)
-);
-
-wire [11:0] tms_addr ;
-reg  [15:0] tms_din ;
-wire [15:0] tms_dout ;
-wire        tms_we_n;
-wire        tms_den_n;
-wire        tms_men_n;
-wire        tms_bio;
-reg         tms_int_n;
 
 wire [15:0] cpu_shared_dout;
 wire  [7:0] z80_shared_dout;
@@ -841,7 +792,7 @@ always @ (posedge clk_sys) begin
         sound_wr <= 0;
     end else if ( clk_3_5M == 1 ) begin
         z80_wait_n <= 1;
-        if ( ioctl_download | ( z80_rd_n == 0 && sound_rom_1_data_valid == 0 && sound_rom_1_cs == 1 ) ) begin
+        if ( z80_rd_n == 0 && sound_rom_1_data_valid == 0 && sound_rom_1_cs == 1 ) begin
             // wait if rom is selected and data is not yet available
             z80_wait_n <= 0;
         end
@@ -1029,7 +980,49 @@ wire z80_tjump_cs;
 wire z80_sound0_cs;
 wire z80_sound1_cs;
 
-chip_select cs (.*);
+chip_select cs (
+    .cpu_a,
+    .cpu_as_n,
+
+    .z80_addr,
+    .MREQ_n,
+    .IORQ_n,
+
+    // M68K selects
+    .prog_rom_cs,
+    .ram_cs,
+    .scroll_ofs_x_cs,
+    .scroll_ofs_y_cs,
+    .frame_done_cs,
+    .int_en_cs,
+    .crtc_cs,
+    .tile_ofs_cs,
+    .tile_attr_cs,
+    .tile_num_cs,
+    .scroll_cs,
+    .shared_ram_cs,
+    .vblank_cs,
+    .tile_palette_cs,
+    .bcu_flip_cs,
+    .sprite_palette_cs,
+    .sprite_ofs_cs,
+    .sprite_cs,
+    .sprite_size_cs,
+    .sprite_ram_cs,
+    .fcu_flip_cs,
+    .reset_z80_cs,
+    .dsp_ctrl_cs,
+
+    // Z80 selects
+    .z80_p1_cs,
+    .z80_p2_cs,
+    .z80_dswa_cs,
+    .z80_dswb_cs,
+    .z80_system_cs,
+    .z80_tjump_cs,
+    .z80_sound0_cs,
+    .z80_sound1_cs
+);
 
 wire sprite_0_cs      = ( curr_sprite_ofs[1:0] == 2'b00 ) & sprite_cs;
 wire sprite_1_cs      = ( curr_sprite_ofs[1:0] == 2'b01 ) & sprite_cs;
@@ -1053,7 +1046,7 @@ always @ (posedge clk_sys ) begin
         int_ack <= 0;
     end else begin
         vbl_sr <= { vbl_sr[0], vbl };
-        // vbl_sr <= { vbl_sr[0], ( vc == 224 ) };
+        //vbl_sr <= { vbl_sr[0], ( vc == 224 ) };
         if ( clk_10M == 1 ) begin
             int_ack <= ( cpu_as_n == 0 ) && ( cpu_fc == 3'b111 ); // cpu acknowledged the interrupt
         end
@@ -1075,74 +1068,116 @@ reg inc_sprite_ofs;
 
 reg [15:0] crtc[4];
 
+wire [11:0] tms_addr ;
+reg  [15:0] tms_din ;
+wire [15:0] tms_dout ;
+wire        tms_we_n;
+wire        tms_den_n;
+wire        tms_men_n;
+wire        tms_out_en_n;
+wire        tms_bio_n;
+reg         tms_int_n;
+
+wire        tms_reset;
+reg   [7:0] tms_reset_count;
+
+always @ (posedge clk_70M) begin
+    if ( reset == 1 ) begin
+        tms_reset_count <= 0;
+        tms_reset <= 1 ;
+    end else begin
+        if ( tms_reset_count < 50 ) begin
+            tms_reset_count <= tms_reset_count + 1;
+        end else begin
+            tms_reset <= 0 ;
+        end
+    end
+end
+
+IKA32010_controller main
+(
+    .i_EMUCLK               ( clk_70M   ),
+    .i_CLKIN_PCEN_n         ( clk_14M   ),
+
+    .o_CLKOUT               (  ),
+    .o_CLKOUT_PCEN_n        (  ),
+    .o_CLKOUT_NCEN_n        (  ),
+
+    .i_RS_n                 ( ~reset    ),
+
+    .o_MEN_n                ( tms_men_n ),
+    .o_DEN_n                ( tms_den_n ),
+    .o_WE_n                 ( tms_we_n  ),
+
+    .o_AOUT                 ( tms_addr  ),
+    .i_DIN                  ( ( tms_den_n == 1 ) ? tms_rom_dout : shared_dsp_ram_dout ),
+    .o_DOUT                 ( tms_dout  ),
+    .o_DOUT_OE_n            ( tms_out_en_n ),
+
+    .i_BIO_n                ( tms_bio_n ),
+    .i_INT_n                ( tms_int_n )
+);
+
 always @ (posedge clk_sys) begin
     if ( reset == 1 ) begin
         int_en <= 0;
         reset_z80_n <= 1;
         tms_int_n <= 1;
-        tms_bio <= 1 ;
+        tms_bio_n <= 1 ;
     end else begin
         // if the pcb uses the 68k reset pin to drive the reset line
-        //reset_z80_n <= cpu_reset_n_o;
-        
-//        if ( clk_14M == 1 ) begin
-//            shared_dsp_ram_w <= 0;
-//            if ( tms_we_n == 0 ) begin // tms port write
-            
-//                case ( tms_addr[2:0] ) 
-//                    3'h0 : shared_dsp_ram_addr <= tms_dout[11:0] ;
-//                    3'h1 : begin
-//                                shared_dsp_ram_din <= tms_dout ;
-//                                shared_dsp_ram_w <= 1;
-//                             end
-//                    3'h3 : begin
-//                                if ( tms_dout[15] == 1 ) begin
-//                                    // clear
-//                                    tms_bio <= 1 ;
-//                                end else if ( tms_dout == 0 ) begin
-//                                    // assert
-//                                    tms_bio <= 0 ;
-//                                end
-//                             end
-//                endcase
-//            end
-//        end
-        
+        // if ( clk_14M == 1 ) begin
+            shared_dsp_ram_w <= 0;
+            if ( tms_we_n == 0 ) begin // tms port write
+                case ( tms_addr[1:0] ) // port number
+                    2'h0 : shared_dsp_ram_addr <= tms_dout[12:0] ;
+                    2'h1 : begin
+                                shared_dsp_ram_din <= tms_dout ;
+                                shared_dsp_ram_w <= 1;
+                            end
+                    2'h3 : begin
+                                if ( tms_dout[15] == 1 ) begin
+                                    // clear
+                                    tms_bio_n <= 1 ;
+                                end else if ( tms_dout == 0 ) begin
+                                    // assert
+                                    tms_bio_n <= 0 ;
+                                end
+                            end
+                endcase
+            end else if ( tms_den_n == 0 ) begin
+                // read port
+                if ( tms_addr[2:0] == 3'b001 ) begin
+                    // read shared ram
+                end
+            end
         // write asserted and rising cpu clock
         if (  clk_10M == 1 && cpu_rw == 0 ) begin
             if ( tile_ofs_cs ) begin
                 curr_tile_ofs <= cpu_dout;
             end
-            
             if ( int_en_cs ) begin
                 int_en <= cpu_dout[0];
             end
-            
             if ( crtc_cs ) begin
                 crtc[ cpu_a[2:1] ] <= cpu_dout;
             end
-            
             if ( bcu_flip_cs ) begin
                 tile_flip <= cpu_dout[0];
             end
-            
             if ( fcu_flip_cs ) begin
                 sprite_flip <= cpu_dout[15];
             end
-            
             if ( sprite_ofs_cs ) begin
                 // mask out valid range
                 curr_sprite_ofs <= { 6'b0, cpu_dout[9:0] };
             end
-            
             if ( scroll_ofs_x_cs ) begin
                 scroll_ofs_x <= cpu_dout;
             end
-            
             if ( scroll_ofs_y_cs ) begin
                 scroll_ofs_y <= cpu_dout;
             end
-            
             // x layer values are even addresses
             if ( scroll_cs ) begin
                 if ( cpu_a[1] == 0 ) begin
@@ -1151,20 +1186,17 @@ always @ (posedge clk_sys) begin
                     scroll_y[ cpu_a[3:2] ] <= cpu_dout[15:7];
                 end
             end
-            
             // offset needs to be auto-incremented
             if ( sprite_cs | sprite_size_cs ) begin
                 inc_sprite_ofs <= 1;
             end
-            
             if ( reset_z80_cs ) begin
                 // the pcb writes to a latch to control the reset 
                 reset_z80_n <= cpu_dout[0];
             end
-            
             if ( dsp_ctrl_cs ) begin
                 // set/clear dsp interrupt line
-                tms_int_n <= cpu_dout[0];
+                tms_int_n <= ~cpu_dout[0];
             end
             
         end
@@ -1178,11 +1210,6 @@ always @ (posedge clk_sys) begin
 end
 
 reg         dsp_int_en;
-
-//wire [15:0] shared_dsp_ram_dout ;
-//reg  [15:0] shared_dsp_ram_din ;
-//reg  [11:0] shared_dsp_ram_addr ;
-//reg         shared_dsp_ram_w ;
 
 reg [15:0] scroll_x_total [3:0];
 reg [15:0] scroll_y_total [3:0];
@@ -1641,8 +1668,9 @@ always @ (posedge clk_sys) begin
 end
 
 reg         tms_rom_w;
-wire [11:0] tms_rom_addr ;
-wire [15:0] tms_rom_din ;
+reg  [15:0] tms_rom_din;
+
+wire [11:0] tms_rom_addr = tms_addr;
 wire [15:0] tms_rom_dout ;
 
 dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
@@ -1731,7 +1759,8 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_h (
     .q_a ( cpu_tile_dout_attr ),
 
     .clock_b ( clk_sys ),
-    .address_b ( tile[13:0] ),    // only read the tile # for now
+    //.address_b ( tile[13:0] ),    // only read the tile # for now
+    .address_b( tile_buf_count ),
     .wren_b ( 0 ),
     .q_b ( tile_attr_dout[31:16] )
     );
@@ -1946,7 +1975,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_h (
 
 wire [15:0] shared_dsp_ram_dout ;
 reg  [15:0] shared_dsp_ram_din ;
-reg  [11:0] shared_dsp_ram_addr ;
+reg  [12:0] shared_dsp_ram_addr ;
 reg         shared_dsp_ram_w ;
 
 // main 68k ram high
@@ -1957,9 +1986,9 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H
     .wren_a ( !cpu_rw & ram_cs & !cpu_uds_n ),
     .data_a ( cpu_dout[15:8]  ),
     .q_a (  ram_dout[15:8] ),
-    
-    .clock_b( clk_14M ),
-    .address_b( shared_dsp_ram_addr[11:0] ),
+
+    .clock_b( clk_sys ),
+    .address_b( shared_dsp_ram_addr[12:0] ),
     .wren_b( shared_dsp_ram_w ),
     .data_b( shared_dsp_ram_din[15:8] ),
     .q_b( shared_dsp_ram_dout[15:8] )
@@ -1973,9 +2002,9 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_L
     .wren_a( !cpu_rw & ram_cs & !cpu_lds_n ),
     .data_a( cpu_dout[7:0]  ),
     .q_a(  ram_dout[7:0] ),
-    
-    .clock_b( clk_14M ),
-    .address_b( shared_dsp_ram_addr[11:0] ),
+
+    .clock_b( clk_sys ),
+    .address_b( shared_dsp_ram_addr[12:0] ),
     .wren_b( shared_dsp_ram_w ),
     .data_b( shared_dsp_ram_din[7:0] ),
     .q_b( shared_dsp_ram_dout[7:0] )
