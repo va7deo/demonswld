@@ -1021,7 +1021,8 @@ chip_select cs (
     .z80_system_cs,
     .z80_tjump_cs,
     .z80_sound0_cs,
-    .z80_sound1_cs
+    .z80_sound1_cs,
+    .scroll_y_offset
 );
 
 wire sprite_0_cs      = ( curr_sprite_ofs[1:0] == 2'b00 ) & sprite_cs;
@@ -1068,13 +1069,13 @@ reg inc_sprite_ofs;
 
 reg [15:0] crtc[4];
 
-wire [11:0] tms_addr ;
-reg  [15:0] tms_din ;
-wire [15:0] tms_dout ;
+wire [11:0] tms_addr;
+reg  [15:0] tms_din;
+wire [15:0] tms_dout;
 wire        tms_we_n;
 wire        tms_den_n;
 wire        tms_men_n;
-wire        tms_out_en_n;
+wire        tms_out_en;
 wire        tms_bio_n;
 reg         tms_int_n;
 
@@ -1084,38 +1085,38 @@ reg   [7:0] tms_reset_count;
 always @ (posedge clk_70M) begin
     if ( reset == 1 ) begin
         tms_reset_count <= 0;
-        tms_reset <= 1 ;
+        tms_reset <= 1;
     end else begin
         if ( tms_reset_count < 50 ) begin
             tms_reset_count <= tms_reset_count + 1;
         end else begin
-            tms_reset <= 0 ;
+            tms_reset <= 0;
         end
     end
 end
 
-IKA32010_controller main
+IKA32010 main
 (
-    .i_EMUCLK               ( clk_70M   ),
-    .i_CLKIN_PCEN_n         ( clk_14M   ),
+    .i_EMUCLK      ( clk_70M                                                 ),
+    .i_CLKIN_PCEN  ( clk_14M                                                 ),
 
-    .o_CLKOUT               (  ),
-    .o_CLKOUT_PCEN_n        (  ),
-    .o_CLKOUT_NCEN_n        (  ),
+    .o_CLKOUT      (                                                         ),
+    .o_CLKOUT_PCEN (                                                         ),
+    .o_CLKOUT_NCEN (                                                         ),
 
-    .i_RS_n                 ( ~reset    ),
+    .i_RS_n        ( ~reset                                                  ),
 
-    .o_MEN_n                ( tms_men_n ),
-    .o_DEN_n                ( tms_den_n ),
-    .o_WE_n                 ( tms_we_n  ),
+    .o_MEN_n       ( tms_men_n                                               ),
+    .o_DEN_n       ( tms_den_n                                               ),
+    .o_WE_n        ( tms_we_n                                                ),
 
-    .o_AOUT                 ( tms_addr  ),
-    .i_DIN                  ( ( tms_den_n == 1 ) ? tms_rom_dout : shared_dsp_ram_dout ),
-    .o_DOUT                 ( tms_dout  ),
-    .o_DOUT_OE_n            ( tms_out_en_n ),
+    .o_AOUT        ( tms_addr                                                ),
+    .i_DIN         ( ( tms_den_n == 1 ) ? tms_rom_dout : shared_dsp_ram_dout ),
+    .o_DOUT        ( tms_dout                                                ),
+    .o_DOUT_OE     ( tms_out_en                                              ),
 
-    .i_BIO_n                ( tms_bio_n ),
-    .i_INT_n                ( tms_int_n )
+    .i_BIO_n       ( tms_bio_n                                               ),
+    .i_INT_n       ( tms_int_n                                               )
 );
 
 always @ (posedge clk_sys) begin
@@ -1123,16 +1124,17 @@ always @ (posedge clk_sys) begin
         int_en <= 0;
         reset_z80_n <= 1;
         tms_int_n <= 1;
-        tms_bio_n <= 1 ;
+        tms_bio_n <= 1;
     end else begin
         // if the pcb uses the 68k reset pin to drive the reset line
-        // if ( clk_14M == 1 ) begin
+        //reset_z80_n <= cpu_reset_n_o;
+        //if ( clk_14M == 1 ) begin
             shared_dsp_ram_w <= 0;
             if ( tms_we_n == 0 ) begin // tms port write
                 case ( tms_addr[1:0] ) // port number
-                    2'h0 : shared_dsp_ram_addr <= tms_dout[12:0] ;
+                    2'h0 : shared_dsp_ram_addr <= tms_dout[12:0];
                     2'h1 : begin
-                                shared_dsp_ram_din <= tms_dout ;
+                                shared_dsp_ram_din <= tms_dout;
                                 shared_dsp_ram_w <= 1;
                             end
                     2'h3 : begin
@@ -1196,7 +1198,7 @@ always @ (posedge clk_sys) begin
             end
             if ( dsp_ctrl_cs ) begin
                 // set/clear dsp interrupt line
-                tms_int_n <= ~cpu_dout[0];
+                tms_int_n <= cpu_dout[0];
             end
             
         end
@@ -1671,7 +1673,7 @@ reg         tms_rom_w;
 reg  [15:0] tms_rom_din;
 
 wire [11:0] tms_rom_addr = tms_addr;
-wire [15:0] tms_rom_dout ;
+wire [15:0] tms_rom_dout;
 
 dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
 (
@@ -1973,10 +1975,10 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_h (
     .q_b ( sprite_palette_dout[15:8] )
     );
 
-wire [15:0] shared_dsp_ram_dout ;
-reg  [15:0] shared_dsp_ram_din ;
-reg  [12:0] shared_dsp_ram_addr ;
-reg         shared_dsp_ram_w ;
+wire [15:0] shared_dsp_ram_dout;
+reg  [15:0] shared_dsp_ram_din;
+reg  [12:0] shared_dsp_ram_addr;
+reg         shared_dsp_ram_w;
 
 // main 68k ram high
 dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H 

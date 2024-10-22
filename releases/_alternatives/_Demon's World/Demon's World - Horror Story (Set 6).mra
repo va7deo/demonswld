@@ -1,10 +1,10 @@
 <misterromdescription>
-    <name>Demon's World / Horror Story (Set 5)</name>
-    <setname>demonwld4</setname>
+    <name>Demon&apos;s World / Horror Story (Set 6)</name>
+    <setname>demonwld5</setname>
     <rbf>demonwld</rbf>
-    <mameversion>0254</mameversion>
+    <mameversion>0270</mameversion>
     <year>1989</year>
-    <manufacturer>Toaplan</manufacturer>
+    <manufacturer>Toaplan (APM Electronics License)</manufacturer>
     <players>2</players>
     <joystick>8-way</joystick>
     <rotation>Horizontal</rotation>
@@ -31,8 +31,8 @@
     <rom index="0" zip="demonwld4.zip|demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
         <interleave output="16">
-            <part name="o16-10.bin" crc="6f7468e0" map="01"/>
-            <part name="o16-09.bin" crc="a572f5f7" map="10"/>
+            <part name="o16-10.bin" crc="4bcd85f6" map="01"/>
+            <part name="o16-09.bin" crc="8e5445ba" map="10"/>
         </interleave>
         <part repeat="0x40000"> FF</part>
 

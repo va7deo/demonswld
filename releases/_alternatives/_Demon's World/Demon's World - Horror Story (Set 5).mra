@@ -1,6 +1,6 @@
 <misterromdescription>
-    <name>Demon's World / Horror Story (Set 2)</name>
-    <setname>demonwld1</setname>
+    <name>Demon&apos;s World / Horror Story (Set 5)</name>
+    <setname>demonwld4</setname>
     <rbf>demonwld</rbf>
     <mameversion>0254</mameversion>
     <year>1989</year>
@@ -23,16 +23,16 @@
         <dip name="Player" bits="12,13" ids="3,5,2,1"/>
         <dip name="No Hit" bits="14" ids="Off,On"/>
         <!-- TJUMP -->
-        <dip name="Region" bits="16" ids="Japan/Taito Corp,Toaplan"/>
+        <dip name="Region" bits="16,19" ids="Japan/Taito Corp,US/Taito America,World/Taito Japan,US/Toaplan"/>
     </switches>
 
     <buttons names="Shot,Jump,Rapid Shot,Slow Scroll,P1 Start,P2 Start,Coin A,Coin B,Pause" default="A,B,X,Y,R,L,Start,Select"/>
 
-    <rom index="0" zip="demonwld1.zip|demonwld.zip" md5="None">
+    <rom index="0" zip="demonwld4.zip|demonwld.zip" md5="None">
         <!-- maincpu - starts at 0x0 -->
         <interleave output="16">
-            <part name="o16n-10.bin" crc="fc38aeaa" map="01"/>
-            <part name="o16n-09.bin" crc="74f66643" map="10"/>
+            <part name="o16-10.bin" crc="6f7468e0" map="01"/>
+            <part name="o16-09.bin" crc="a572f5f7" map="10"/>
         </interleave>
         <part repeat="0x40000"> FF</part>
 
@@ -54,7 +54,7 @@
         </interleave>
 
         <!-- audiocpu - starts at 0x200000 -->
-        <part name="o16-11.bin" crc="dbe08c85"/>
+        <part name="rom11" crc="397eca1b"/>
 
         <!-- dsp - starts at 0x208000 -->
         <interleave output="16">
