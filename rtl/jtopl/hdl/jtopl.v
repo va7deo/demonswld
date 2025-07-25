@@ -241,8 +241,6 @@ jtopl_op #(.OPL_TYPE(OPL_TYPE)) u_op(
 jtopl_acc u_acc(
     .rst        ( rst           ),
     .clk        ( clk           ),
-    .slot       ( slot          ),
-    .rhy_en     ( rhy_en        ),
     .cenop      ( cenop         ),
     .zero       ( zero          ),
     .op_result  ( op_result     ),
@@ -250,17 +248,6 @@ jtopl_acc u_acc(
     .con        ( con_out       ),
     .snd        ( snd           )
 );
-
-`ifdef SIMULATION
-integer fsnd;
-initial begin
-    fsnd=$fopen("jtopl.raw","wb");
-end
-
-always @(posedge zero) begin
-    $fwrite(fsnd,"%u", {snd, snd});
-end
-`endif
 
 endmodule
     

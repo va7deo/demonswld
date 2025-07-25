@@ -33,13 +33,12 @@ module jtopl_pg_sum (
     output reg  [ 9:0] phase_op
 );
 
-wire [21:0] phinc_mul;
-reg  [ 4:0] factor[0:15];
-
-assign phinc_mul = {5'b0, phinc_pure} * factor[mul];
+reg [21:0] phinc_mul;
+reg [ 4:0] factor[0:15];
 
 always @(*) begin
-    phase_out = pg_rst ? 19'd0 : (phase_in + phinc_mul[19:1]);
+    phinc_mul = { 5'b0, phinc_pure} * factor[mul];
+    phase_out = pg_rst ? 'd0 : (phase_in + phinc_mul[19:1]);
     phase_op  = phase_out[18:9];
 end
 
