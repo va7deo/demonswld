@@ -51,10 +51,13 @@ module emu
     output        VGA_F1,
     output [2:0]  VGA_SL,
     output        VGA_SCALER, // Force VGA scaler
+    output        VGA_DISABLE, // analog out is off
 
     input  [11:0] HDMI_WIDTH,
     input  [11:0] HDMI_HEIGHT,
     output        HDMI_FREEZE,
+    output        HDMI_BLACKOUT,
+    output        HDMI_BOB_DEINT,
 
 `ifdef MISTER_FB
     // Use framebuffer in DDRAM (USE_FB=1 in qsf)
@@ -234,7 +237,7 @@ localparam CONF_STR = {
     "P1O89,Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
     "P1O3,Orientation,Horz,Vert;",
     "P1-;",
-    "P1O46,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%,CRT 100%;",
+    "P1O46,Scandoubler Fx,None,CRT 25%,CRT 50%,CRT 75%,CRT 100%;",
     "P1OA,Force Scandoubler,Off,On;",
     "P1-;",
     "P1O7,Video Mode,NTSC,PAL;",

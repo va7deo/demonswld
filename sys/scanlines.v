@@ -20,9 +20,12 @@ always @(posedge clk) begin
 	old_vs <= vs_in;
 	
 	if(old_hs && ~hs_in) begin
-		scanline <= scanline ^ scanlines;
-    end
-
+		if(v2) begin
+			scanline <= scanline + 1'd1;
+			if (scanline == scanlines) scanline <= 0;
+		end
+		else scanline <= scanline ^ scanlines;
+	end
 	if(old_vs && ~vs_in) scanline <= 0;
 end
 
@@ -46,8 +49,8 @@ always @(*) begin
 			d = {{2'b00, r[7:2]},
 			     {2'b00, g[7:2]},
 				  {2'b00, b[7:2]}};
-        4: // black
-            d = 0;
+		4: // black
+			d = 0;
 
 		default: d = {r,g,b};
 	endcase
