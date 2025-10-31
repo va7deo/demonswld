@@ -18,9 +18,9 @@
 
 ## VENDOR  "Altera"
 ## PROGRAM "Quartus Prime"
-## VERSION "Version 20.1.1 Build 720 11/11/2020 SJ Lite Edition"
+## VERSION "Version 22.1std.2 Build 922 07/20/2023 SC Lite Edition"
 
-## DATE    "Mon Jun 05 18:32:43 2023"
+## DATE    "Thur Oct 30 09:45:17 2025"
 
 ##
 ## DEVICE  "5CSEBA6U23I7"

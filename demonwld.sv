@@ -18,8 +18,7 @@
 
 `default_nettype none
 
-module emu
-(
+module emu (
     //Master input clock
     input         CLK_50M,
 
@@ -200,95 +199,99 @@ assign LED_DISK = 0;
 assign LED_POWER = 0;
 assign BUTTONS = 0;
 
-// Status Bit Map:
-//              Upper Case                     Lower Case           
-// 0         1         2         3          4         5         6   
-// 01234567890123456789012345678901 23456789012345678901234567890123
-// 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X  XXXXXXXX    X   XXXX XXXXXXXX X     X    XX           XXXXXXXX
-
-wire [1:0] aspect_ratio = status[9:8];
-wire       orientation  = ~status[3];
+wire [1:0] aspect_ratio = status[3:2];
+wire       orientation  = ~status[1];
 wire [2:0] scan_lines   = status[6:4];
 reg        refresh_mod;
 reg        new_vmode;
 
 always @(posedge clk_sys) begin
-    if (refresh_mod != status[19]) begin
-        refresh_mod <= status[19];
+    if (refresh_mod != status[8]) begin
+        refresh_mod <= status[8];
         new_vmode <= ~new_vmode;
     end
 end
 
-wire [3:0] hs_offset = status[27:24];
-wire [3:0] vs_offset = status[31:28];
-wire [3:0] hs_width  = status[59:56];
-wire [3:0] vs_width  = status[63:60];
+wire [4:0] hs_offset = hv_pos_en ? status[48:44] : 5'b00000;
+wire [4:0] vs_offset = hv_pos_en ? status[53:49] : 5'b00000;
 
-assign VIDEO_ARX = (!aspect_ratio) ? (orientation  ? 8'd4 : 8'd3) : (aspect_ratio - 1'd1);
-assign VIDEO_ARY = (!aspect_ratio) ? (orientation  ? 8'd3 : 8'd4) : 12'd0;
+wire [4:0] hs_width  = hv_sync_en ? status[58:54] : 5'b00000;
+wire [4:0] vs_width  = hv_sync_en ? status[63:59] : 5'b00000;
+
+wire [12:0] raw_arx; // Raw aspect ratio X
+wire [12:0] raw_ary; // Raw aspect ratio Y
+
+assign raw_arx = (!aspect_ratio) ? (orientation  ? 8'd4 : 8'd3) : (aspect_ratio - 1'd1);
+assign raw_ary = (!aspect_ratio) ? (orientation  ? 8'd3 : 8'd4) : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-    "Toaplan V1;;",
+    "DEMONWLD;;",
     "-;",
     "P1,Video Settings;",
+    "P1O[3:2],Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
     "P1-;",
-    "P1O89,Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
-    "P1O3,Orientation,Horz,Vert;",
+    "P1O[9],Vertical Scale,Fill,Integer;",
+    "d3P1O[10],Vertical Crop,Disabled,216p(5x);",
+    "h4P1O[14:11],Crop Offset,0,2,4,8,10,12,-12,-10,-8,-6,-4,-2;",
     "P1-;",
-    "P1O46,Scandoubler Fx,None,CRT 25%,CRT 50%,CRT 75%,CRT 100%;",
-    "P1OA,Force Scandoubler,Off,On;",
+    "P1O[8],Refresh Rate,Native,NTSC;",
+    "P1O[7],Force Scandoubler,Off,On;",
+    "P1O[6:4],Scandoubler Fx,Off,CRT 25%,CRT 50%,CRT 75%,CRT 100%;",
     "P1-;",
-    "P1O7,Video Mode,NTSC,PAL;",
-    "P1OM,Video Signal,RGBS/YPbPr,Y/C;",
-    "P1OJ,Refresh Rate,Native,NTSC;",
-    "P1-;",
-    "P1OOR,H-sync Pos Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
-    "P1OSV,V-sync Pos Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
-    "P1-;",
-    "P1oOR,H-sync Width Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
-    "P1oSV,V-sync Width Adj,0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1;",
-    "P1-;",
+    "P1O[42],H/V-Pos Adj,Off,On;",
+    "h1P1O[48:44],H-Pos,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1;",
+    "h1P1O[53:49],V-Pos,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1;",
+    "h1P1-;",
+    "P1O[43],H/V-Sync Adj,Off,On;",
+    "h2P1O[58:54],H-Sync,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1;",
+    "h2P1O[63:59],V-Sync,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1;",
+    "h2P1-;",
     "P2,Audio Settings;",
+    "P2O[15],OPL2 Audio,On,Off;",
     "P2-;",
-    "P2oBC,OPL2 Volume,Default,50%,25%,0%;",
+    "P2O[17:16],OPL2 Volume,50.00%,75.00%,87.50%,100.00%;",
     "P2-;",
+    "P3,Game Settings;",
+    "P3O[33],CPU Overclock,10Mhz,17.5MHz;",
+    "P3-;",
     "-;",
-    "P3,Core Options;",
-    "P3-;",
-    "P3o6,Swap P1/P2 Joystick,Off,On;",
-    "P3-;",
-    "P3OF,68k Freq.,10Mhz,17.5MHz;",
-    "P3-;",
-    "P3o0,Scroll Debug,Off,On;",
-    "P3-;",
     "DIP;",
-    "-;",
-    "OK,Pause OSD,Off,When Open;",
-    "OL,Dim Video,Off,10s;",
     "-;",
     "R0,Reset;",
     "V,v",`BUILD_DATE
 };
 
 wire hps_forced_scandoubler;
-wire forced_scandoubler = hps_forced_scandoubler | status[10];
+wire forced_scandoubler = hps_forced_scandoubler | status[7];
 
-wire  [1:0] buttons;
-wire [63:0] status;
-wire [10:0] ps2_key;
-wire [15:0] joy0, joy1;
+wire [15:0] status_menumask;
+wire        direct_video;
 
-hps_io #(.CONF_STR(CONF_STR)) hps_io
-(
+wire hv_pos_en = status[42];
+wire hv_sync_en = status[43];
+wire cheat_en = status[64];
+
+assign status_menumask[0] = direct_video;
+assign status_menumask[1] = hv_pos_en;
+assign status_menumask[2] = hv_sync_en;
+assign status_menumask[3] = crop_ok;
+assign status_menumask[4] = crop_en;
+assign status_menumask[5] = cheat_en;
+
+wire   [1:0] buttons;
+wire [127:0] status;
+wire  [10:0] ps2_key;
+wire  [15:0] joy0, joy1;
+
+hps_io #(.CONF_STR(CONF_STR)) hps_io (
     .clk_sys(clk_sys),
     .HPS_BUS(HPS_BUS),
 
     .buttons(buttons),
     .ps2_key(ps2_key),
     .status(status),
-    .status_menumask(direct_video),
+    .status_menumask(status_menumask),
     .forced_scandoubler(hps_forced_scandoubler),
     .gamma_bus(gamma_bus),
     .new_vmode(new_vmode),
@@ -318,7 +321,20 @@ always @(posedge clk_sys) begin
     end
 end
 
-wire        direct_video;
+reg [7:0] pcb;
+
+always @(posedge clk_sys) begin
+    if (ioctl_wr && ioctl_index==1) begin
+        pcb <= ioctl_dout;
+    end
+end
+
+localparam demonwld  = 'h00;
+localparam demonwld1 = 'h01;
+localparam demonwld2 = 'h02;
+localparam demonwld3 = 'h03;
+localparam demonwld4 = 'h04;
+localparam demonwld5 = 'h05;
 
 wire        ioctl_download;
 wire        ioctl_upload;
@@ -348,17 +364,10 @@ always @ (posedge clk_sys ) begin
     p1        <= { 1'b0, p1_buttons[2:0], p1_right, p1_left, p1_down, p1_up };
     p2        <= { 1'b0, p2_buttons[2:0], p2_right, p2_left, p2_down, p2_up };
     z80_dswa  <= sw[0];
-    z80_dswb  <= sw[1];
+    z80_dswb  <= { sw[1][7], (sw[1][6] | status[73]), sw[1][5:0] };
     z80_tjump <= sw[2];
-
-    if ( status[32] == 1 ) begin
-        system    <= { vbl, start2 | p1_buttons[3], start1 | p1_buttons[3], coin_b, coin_a, service | status[32], key_tilt, key_service };
-    end else begin
-        system    <= { vbl, start2,                 start1,                 coin_b, coin_a, service,              key_tilt, key_service };
-    end
+    system    <= { vbl, start[1], start[0], coin[1], coin[0], service, key_tilt, key_service };
 end
-
-reg        p1_swap;
 
 reg        p1_right;
 reg        p1_left;
@@ -372,52 +381,30 @@ reg        p2_down;
 reg        p2_up;
 reg [3:0]  p2_buttons;
 
-reg start1;
-reg start2;
-reg coin_a;
-reg coin_b;
+reg [1:0] start;
+reg [1:0] coin;
 reg b_pause;
 reg service;
 
 always @ * begin
-    p1_swap <= status[38];
+    p1_right   <= joy0[0]   | key_p1_right;
+    p1_left    <= joy0[1]   | key_p1_left;
+    p1_down    <= joy0[2]   | key_p1_down;
+    p1_up      <= joy0[3]   | key_p1_up;
+    p1_buttons <= joy0[7:4] | {key_p1_c, key_p1_b, key_p1_a};
+    start[0]   <= joy0[8]   | key_start_1p;
+    coin[0]    <= joy0[9]   | key_coin_a;
 
-        if ( status[38] == 0 ) begin
-        p1_right   <= joy0[0]   | key_p1_right;
-        p1_left    <= joy0[1]   | key_p1_left;
-        p1_down    <= joy0[2]   | key_p1_down;
-        p1_up      <= joy0[3]   | key_p1_up;
-        p1_buttons <= joy0[7:4] | {key_p1_c, key_p1_b, key_p1_a};
+    p2_right   <= joy1[0]   | key_p2_right;
+    p2_left    <= joy1[1]   | key_p2_left;
+    p2_down    <= joy1[2]   | key_p2_down;
+    p2_up      <= joy1[3]   | key_p2_up;
+    p2_buttons <= joy1[7:4] | {key_p2_c, key_p2_b, key_p2_a};
+    start[1]   <= joy1[8]   | key_start_2p;
+    coin[1]    <= joy1[9]   | key_coin_b;
 
-        p2_right   <= joy1[0]   | key_p2_right;
-        p2_left    <= joy1[1]   | key_p2_left;
-        p2_down    <= joy1[2]   | key_p2_down;
-        p2_up      <= joy1[3]   | key_p2_up;
-        p2_buttons <= joy1[7:4] | {key_p2_c, key_p2_b, key_p2_a};
-    end else begin
-        p2_right   <= joy0[0]   | key_p1_right;
-        p2_left    <= joy0[1]   | key_p1_left;
-        p2_down    <= joy0[2]   | key_p1_down;
-        p2_up      <= joy0[3]   | key_p1_up;
-        p2_buttons <= joy0[7:4] | {key_p1_c, key_p1_b, key_p1_a};
-
-        p1_right   <= joy1[0]   | key_p2_right;
-        p1_left    <= joy1[1]   | key_p2_left;
-        p1_down    <= joy1[2]   | key_p2_down;
-        p1_up      <= joy1[3]   | key_p2_up;
-        p1_buttons <= joy1[7:4] | {key_p2_c, key_p2_b, key_p2_a};
-    end
-end
-
-always @ * begin
-        start1    <= joy0[8]  | joy1[8]  | key_start_1p;
-        start2    <= joy0[9]  | joy1[9]  | key_start_2p;
-
-        coin_a    <= joy0[10] | joy1[10] | key_coin_a;
-        coin_b    <= joy0[11] | joy1[11] | key_coin_b;
-
-        b_pause   <= joy0[12] | key_pause;
-        service   <= key_test;
+    b_pause   <= joy0[10] | key_pause;
+    service   <= key_test;
 end
 
 // Keyboard handler
@@ -467,13 +454,10 @@ end
 wire pll_locked;
 
 wire clk_sys;
-wire turbo_68k = status[15];
-reg  clk_3_5M, clk_7M, clk_10M, clk_14M, clk_14M_N;
+wire clk_70M;
+assign SDRAM_CLK = clk_70M;
 
-wire  clk_70M;
-
-pll pll
-(
+pll pll (
     .refclk(CLK_50M),
     .rst(0),
     .outclk_0(clk_sys),
@@ -481,59 +465,9 @@ pll pll
     .locked(pll_locked)
 );
 
-assign    SDRAM_CLK = clk_70M;
-
-localparam  CLKSYS=70;
-
-reg [5:0] clk14_count;
-reg [5:0] clk10_count;
-reg [5:0] clk7_count;
-reg [5:0] clk_3_5_count;
-
-always @ (posedge clk_sys ) begin
-    clk_10M <= 0;
-    if ( turbo_68k == 0 ) begin
-        // standard speed 20MHz = 10MHz 68k
-        case (clk10_count)
-            1: clk_10M <= 1;
-            3: clk_10M <= 1;
-        endcase
-        if ( clk10_count == 6 ) begin
-            clk10_count <= 0;
-        end else if ( pause_cpu == 0 ) begin
-            clk10_count <= clk10_count + 1;
-        end
-    end else begin
-        // standard speed 35MHz = 17.5MHz 68k
-        case (clk10_count)
-            1: clk_10M <= 1;
-        endcase
-        if ( clk10_count == 1 ) begin
-            clk10_count <= 0;
-        end else if ( pause_cpu == 0 ) begin
-            clk10_count <= clk10_count + 1;
-        end
-    end
-    clk_7M <= ( clk7_count == 0);
-    if ( clk7_count == 9 ) begin
-        clk7_count <= 0;
-    end else begin
-        clk7_count <= clk7_count + 1;
-    end
-    clk_14M <= ( clk14_count == 0);
-    clk_14M_N <= ( clk14_count == 2);
-    if ( clk14_count == 4 ) begin
-        clk14_count <= 0;
-    end else begin
-        clk14_count <= clk14_count + 1;
-    end
-    clk_3_5M <= ( clk_3_5_count == 0);
-    if ( clk_3_5_count == 19 ) begin
-        clk_3_5_count <= 0;
-    end else if ( pause_cpu == 0 ) begin
-        clk_3_5_count <= clk_3_5_count + 1;
-    end
-end
+wire cen7, cen14;
+generate_cen #(.BASE_FREQ(70000000), .TARGET_FREQ(14000000), .EDGE_WIDTH(2))
+gen_cen7 (clk_sys, 1'b0, {cen7, cen14});
 
 wire reset;
 assign reset = RESET | status[0] | (ioctl_download & !ioctl_index) | buttons[1] | key_reset;
@@ -556,13 +490,17 @@ wire vsync;
 
 reg hbl_delay, vbl_delay;
 
-always @ ( posedge clk_7M ) begin
+always @(posedge clk_sys) begin
+  if (cen7) begin
     hbl_delay <= hbl;
     vbl_delay <= vbl;
+  end
 end
 
+wire crtc_ready;
 video_timing video_timing (
-    .clk(clk_7M),
+    .clk(clk_sys),
+    .cen(cen7),
     .reset(reset),
     .crtc0(crtc[0]),
     .crtc1(crtc[1]),
@@ -578,7 +516,8 @@ video_timing video_timing (
     .hbl_delay(hbl),
     .vbl(vbl),
     .hsync(hsync),
-    .vsync(vsync)
+    .vsync(vsync),
+    .crtc_ready(crtc_ready)
 );
 
 // PAUSE SYSTEM
@@ -586,13 +525,12 @@ wire    pause_cpu;
 wire    hs_pause;
 
 // 8 bits per colour, 70MHz sys clk
-pause #(8,8,8,70) pause
-(
+pause #(8,8,8,70) pause (
     .clk_sys(clk_sys),
     .reset(reset),
     .user_button(b_pause),
     .pause_request(hs_pause),
-    .options(status[21:20]),
+    .options(),
     .pause_cpu(pause_cpu),
     .dim_video(dim_video),
     .OSD_STATUS(OSD_STATUS),
@@ -605,40 +543,52 @@ pause #(8,8,8,70) pause
 wire [23:0] rgb_pause_out;
 wire dim_video;
 
-arcade_video #(320,24) arcade_video
-(
+arcade_video #(320,24) arcade_video (
         .*,
-
         .clk_video(clk_sys),
-        .ce_pix(clk_7M),
-
+        .ce_pix(cen7),
         .RGB_in(rgb_pause_out),
-
         .HBlank(hbl),
         .VBlank(vbl),
         .HSync(hsync),
         .VSync(vsync),
-
+        .VGA_DE(scale_de), // Output VGA data enable
         .fx(scan_lines)
 );
+wire scale_de;    // Scaled data enable input
+wire scale_de_in; // Scaled data enable output
 
-/*
-    Phase Accumulator Increments (Fractional Size 32, look up size 8 bit, total 40 bits)
-    Increment Calculation - (Output Clock * 2 ^ Word Size) / Reference Clock
-    Example
-    NTSC = 3.579545
-    PAL =  4.43361875
-    W = 40 ( 32 bit fraction, 8 bit look up reference)
-    Ref CLK = 42.954544 (This could us any clock)
-    NTSC_Inc = 3.579545333 * 2 ^ 40 / 96 = 40997413706
-*/
+assign VGA_DE = scale_de_in; // VGA data enable output
 
-// SET PAL and NTSC TIMING
-`ifdef MISTER_ENABLE_YC
-    assign CHROMA_PHASE_INC = PALFLAG ? 40'd56225080500: 40'd56225080500;
-    assign YC_EN =  status[22];
-    assign PALFLAG = status[7];
-`endif
+reg  [11:0] crop_size;  // Cropping size
+reg   [4:0] crop_off;   // Cropping offset (-16 to +15)
+wire        crop_scale; // Cropping scale (0 - normal, 1 - V-integer)
+wire        crop_en;    // Cropping enable (OSD controlled)
+reg         crop_ok;    // Cropping compatibility with mister.ini settings
+wire  [3:0] vcopt;      // Video crop options
+
+// Vertical Crop options
+assign crop_scale = status[9];
+assign crop_en    = status[10];
+assign vcopt      = status[14:11];
+
+always @(posedge clk_sys) begin
+    crop_ok <= HDMI_WIDTH == 1920 && HDMI_HEIGHT == 1080 && status[6:4]==0 && status[7]==0 && !hps_forced_scandoubler && !direct_video;
+    crop_off <= (vcopt < 6) ? {vcopt,1'b0} : ({vcopt,1'b0} - 5'd24);
+    crop_size <= (crop_ok & crop_en) ? 10'd216 : 10'd0;
+end
+
+// Video Crop
+video_freak video_freak (
+    .*,
+    .VGA_DE      ( scale_de_in ), // VGA data enable output
+    .VGA_DE_IN   ( scale_de    ), // Input VGA data enable
+    .ARX         ( raw_arx     ), // Raw aspect ratio X
+    .ARY         ( raw_ary     ), // Raw aspect ratio Y
+    .CROP_SIZE   ( crop_size   ), // Cropping size
+    .CROP_OFF    ( crop_off    ), // Cropping offset
+    .SCALE       ( crop_scale  )  // Cropping scale
+);
 
 screen_rotate screen_rotate (.*);
 
@@ -666,17 +616,6 @@ reg sprite_flip;
 // 68000 CPU
 // ===============================================================
 
-// clock generation
-reg  fx68_phi1 = 0;
-wire fx68_phi2 = !fx68_phi1;
-
-// phases for 68k clock
-always @(posedge clk_sys) begin
-    if ( clk_10M == 1 ) begin
-        fx68_phi1 <= ~fx68_phi1;
-    end
-end
-
 // CPU outputs
 wire cpu_rw;        // Read = 1, Write = 0
 wire cpu_as_n;      // Address strobe
@@ -702,16 +641,28 @@ wire vpa_n = ~ ( cpu_lds_n == 0 && cpu_fc == 3'b111 );    // from outzone schema
 assign cpu_a[0] = reset;    // debug hack odd memory address should cause cpu exception
 
 cc_shifter cc_reset (
-    .clk_out(clk_10M),
+    .clk_out(clk_sys),
     .i(reset_z80_n),
     .o(reset_n)
 );
 
+wire fx68k_cen_a, fx68k_cen_b;
+wire fx68k_a, fx68k_b, fx68k_c, fx68k_d;
+generate_cen #(.BASE_FREQ(70000000), .TARGET_FREQ(20000000), .RATIO_WIDTH(24)) // 10 MHz
+cpu_cen_c (clk_sys, RESET, fx68k_cen_a);
+fx68k_cen cenab(clk_sys, RESET, fx68k_cen_a, fx68k_a, fx68k_b);
+
+generate_cen #(.BASE_FREQ(70000000), .TARGET_FREQ(35000000), .RATIO_WIDTH(24)) // 17.5MHz
+cpu_cen_d (clk_sys, RESET, fx68k_cen_b);
+fx68k_cen cencd(clk_sys, RESET, fx68k_cen_b, fx68k_c, fx68k_d);
+
+wire turbo_68k = status[33];
+
 fx68k fx68k (
     // input
-    .clk( clk_10M ),
-    .enPhi1(fx68_phi1),
-    .enPhi2(fx68_phi2),
+    .clk( clk_sys ),
+    .enPhi1((turbo_68k ? fx68k_c : fx68k_a) & ~pause_cpu),
+    .enPhi2((turbo_68k ? fx68k_d : fx68k_b) & ~pause_cpu),
     .extReset(reset),
     .pwrUp(reset),
 
@@ -747,7 +698,7 @@ fx68k fx68k (
 );
 
 always @ (posedge clk_sys) begin
-    if ( clk_10M == 1 ) begin
+    if (turbo_68k ? fx68k_c : fx68k_a) begin
         // tell 68k to wait for valid data. 0=ready 1=wait
         // always ack when it's not program rom
         dtack_n <= prog_rom_cs ? !prog_rom_data_valid : 0;
@@ -792,8 +743,7 @@ wire MREQ_n;
 always @ (posedge clk_sys) begin
     if ( reset == 1 ) begin
         z80_wait_n <= 0;
-        sound_wr <= 0;
-    end else if ( clk_3_5M == 1 ) begin
+    end else begin
         z80_wait_n <= 1;
         if ( z80_rd_n == 0 && sound_rom_1_data_valid == 0 && sound_rom_1_cs == 1 ) begin
             // wait if rom is selected and data is not yet available
@@ -826,101 +776,87 @@ always @ (posedge clk_sys) begin
                 z80_din <= 8'h00;
             end
         end
-        sound_wr <= 0;
-        if ( z80_wr_n == 0 ) begin
-            if ( z80_sound0_cs | z80_sound1_cs ) begin
-                sound_data  <= z80_dout;
-                sound_addr <= { 1'b0, z80_sound1_cs }; // pad for opl3.  opl2 is single bit address
-                sound_wr <= 1;
-            end
-        end
     end
 end
-
-reg  [1:0] sound_addr;
-reg  [7:0] sound_data;
-reg sound_wr;
 
 wire [7:0] opl_dout;
 wire opl_irq_n;
+wire opl_en = ~status[15];
 
-reg signed [15:0] sample;
-
+wire signed [15:0] opl_sample;
 assign AUDIO_S = 1'b1;
 
-wire opl_sample_clk;
-
-jtopl #(.OPL_TYPE(2)) jtopl2
-(
-    .rst(~reset_n),
+opl2_fpga opl2_fpga (
     .clk(clk_sys),
-    .cen(clk_3_5M),
-    .din(sound_data),
-    .addr(sound_addr),
-    .cs_n('0),
-    .wr_n(~sound_wr),
+    .clk_host(clk_sys),
+    .clk_dac(),
+    .ic_n(reset_n),
+    .cs_n(!(z80_sound0_cs || z80_sound1_cs)),
+    .rd_n(z80_rd_n),
+    .wr_n(z80_wr_n),
+    .address(z80_sound1_cs),
+    .din(z80_dout),
     .dout(opl_dout),
-    .irq_n(opl_irq_n),
-    .snd(sample),
-    .sample(opl_sample_clk)
+    .sample_valid(),
+    .sample(opl_sample),
+    .led(),
+    .irq_n(opl_irq_n)
 );
 
-wire [1:0] opl2_level = status[44:43];    // opl2 audio mix
+wire [1:0] opl2_level_synced = status[17:16];
 
-reg  [7:0] opl2_mult;
-
-// set the multiplier for each channel from menu
-
-always @( posedge clk_sys, posedge reset ) begin
-    if (reset) begin
-        opl2_mult<=0;
-    end else begin
-        case( opl2_level )
-            0: opl2_mult <= 8'h0c;    // 75%
-            1: opl2_mult <= 8'h08;    // 50%
-            2: opl2_mult <= 8'h04;    // 25%
-            3: opl2_mult <= 8'h00;    // 0%
-        endcase
-    end
+reg [7:0] opl2_mult;
+always @(posedge clk_sys) begin
+    case (opl2_level_synced)
+        2'd0: opl2_mult <= 8'h08; // 50.00%
+        2'd1: opl2_mult <= 8'h0C; // 75.00%
+        2'd2: opl2_mult <= 8'h0E; // 87.50%
+        2'd3: opl2_mult <= 8'h10; // 100.00%
+    endcase
 end
 
 wire signed [15:0] mono;
+localparam [15:0] width_bus_mono = 5'd16;
 
-jtframe_mixer #(.W0(16), .WOUT(16)) u_mix_mono(
-    .rst    ( reset        ),
-    .clk    ( clk_sys      ),
-    .cen    ( 1'b1         ),
-    // input signals
-    .ch0    ( sample       ),
-    .ch1    ( 16'd0        ),
-    .ch2    ( 16'd0        ),
-    .ch3    ( 16'd0        ),
-    // gain for each channel in 4.4 fixed point format
-    .gain0  ( opl2_mult    ),
-    .gain1  ( 8'd0         ),
-    .gain2  ( 8'd0         ),
-    .gain3  ( 8'd0         ),
-    .mixed  ( mono         ),
-    .peak   (              )
+wire signed [15:0] ch_mono_bus;
+assign ch_mono_bus = opl_sample;
+
+wire [7:0] gain_mono_bus;
+assign gain_mono_bus = {opl_en ? opl2_mult : 8'd0};
+
+audio_mixer #(
+    .CH_NM ( 1              ),
+    .WM    ( 16             ),
+    .WOUT  ( 16             ),
+    .W     ( width_bus_mono )
+) u_mix_mono (
+    .RESET   ( reset           ),
+    .CLK     ( clk_sys         ),
+    .CH      ( ch_mono_bus     ),
+    .GAIN    ( gain_mono_bus   ),
+    .MIX_OUT ( mono            ),
+    .PEAK    (                 )
 );
 
 always @ (posedge clk_sys ) begin
-    if ( pause_cpu == 1 ) begin
+    if (pause_cpu == 1) begin
         AUDIO_L <= 0;
         AUDIO_R <= 0;
-    end else if ( pause_cpu == 0 ) begin
-        // mix audio
+    end else begin
         AUDIO_L <= mono;
         AUDIO_R <= mono;
     end
 end
 
+wire z80_cen;
+generate_cen #(.BASE_FREQ(70000000), .TARGET_FREQ(3500000), .RATIO_WIDTH(24))
+z80cen (clk_sys, 1'b0, z80_cen);
 
-T80pa u_cpu(
+T80pa u_cpu (
     .RESET_n    ( reset_n & reset_z80_n ),
     .CLK        ( clk_sys ),
-    .CEN_p      ( clk_3_5M ),
-    .CEN_n      ( ~clk_3_5M ),
+    .CEN_p      ( z80_cen ),
+    .CEN_n      ( ~z80_cen ),
 
     .WAIT_n     ( z80_wait_n ), // don't wait if data is valid or rom access isn't selected
     .INT_n      ( opl_irq_n ),  // opl timer
@@ -984,48 +920,48 @@ wire z80_sound0_cs;
 wire z80_sound1_cs;
 
 chip_select cs (
-    .cpu_a,
-    .cpu_as_n,
+    .pcb(pcb),
+    .cpu_a(cpu_a),
+    .cpu_as_n(cpu_as_n),
 
-    .z80_addr,
-    .MREQ_n,
-    .IORQ_n,
+    .z80_addr(z80_addr),
+    .MREQ_n(MREQ_n),
+    .IORQ_n(IORQ_n),
 
-    // M68K selects
-    .prog_rom_cs,
-    .ram_cs,
-    .scroll_ofs_x_cs,
-    .scroll_ofs_y_cs,
-    .frame_done_cs,
-    .int_en_cs,
-    .crtc_cs,
-    .tile_ofs_cs,
-    .tile_attr_cs,
-    .tile_num_cs,
-    .scroll_cs,
-    .shared_ram_cs,
-    .vblank_cs,
-    .tile_palette_cs,
-    .bcu_flip_cs,
-    .sprite_palette_cs,
-    .sprite_ofs_cs,
-    .sprite_cs,
-    .sprite_size_cs,
-    .sprite_ram_cs,
-    .fcu_flip_cs,
-    .reset_z80_cs,
-    .dsp_ctrl_cs,
+    .prog_rom_cs(prog_rom_cs),
+    .ram_cs(ram_cs),
+    .scroll_ofs_x_cs(scroll_ofs_x_cs),
+    .scroll_ofs_y_cs(scroll_ofs_y_cs),
+    .frame_done_cs(frame_done_cs),
+    .int_en_cs(int_en_cs),
+    .crtc_cs(crtc_cs),
+    .tile_ofs_cs(tile_ofs_cs),
+    .tile_attr_cs(tile_attr_cs),
+    .tile_num_cs(tile_num_cs),
+    .scroll_cs(scroll_cs),
+    .shared_ram_cs(shared_ram_cs),
+    .vblank_cs(vblank_cs),
+    .tile_palette_cs(tile_palette_cs),
+    .bcu_flip_cs(bcu_flip_cs),
+    .sprite_palette_cs(sprite_palette_cs),
+    .sprite_ofs_cs(sprite_ofs_cs),
+    .sprite_cs(sprite_cs),
+    .sprite_size_cs(sprite_size_cs),
+    .sprite_ram_cs(sprite_ram_cs),
+    .fcu_flip_cs(fcu_flip_cs),
+    .reset_z80_cs(reset_z80_cs),
+    .dsp_ctrl_cs(dsp_ctrl_cs),
 
-    // Z80 selects
-    .z80_p1_cs,
-    .z80_p2_cs,
-    .z80_dswa_cs,
-    .z80_dswb_cs,
-    .z80_system_cs,
-    .z80_tjump_cs,
-    .z80_sound0_cs,
-    .z80_sound1_cs,
-    .scroll_y_offset
+    .z80_p1_cs(z80_p1_cs),
+    .z80_p2_cs(z80_p2_cs),
+    .z80_dswa_cs(z80_dswa_cs),
+    .z80_dswb_cs(z80_dswb_cs),
+    .z80_system_cs(z80_system_cs),
+    .z80_tjump_cs(z80_tjump_cs),
+    .z80_sound0_cs(z80_sound0_cs),
+    .z80_sound1_cs(z80_sound1_cs),
+
+    .scroll_y_offset(scroll_y_offset)
 );
 
 wire sprite_0_cs      = ( curr_sprite_ofs[1:0] == 2'b00 ) & sprite_cs;
@@ -1051,7 +987,7 @@ always @ (posedge clk_sys ) begin
     end else begin
         vbl_sr <= { vbl_sr[0], vbl };
         //vbl_sr <= { vbl_sr[0], ( vc == 224 ) };
-        if ( clk_10M == 1 ) begin
+        if (turbo_68k ? fx68k_c : fx68k_a) begin
             int_ack <= ( cpu_as_n == 0 ) && ( cpu_fc == 3'b111 ); // cpu acknowledged the interrupt
         end
         if ( vbl_sr == 2'b01 ) begin// rising edge
@@ -1079,13 +1015,13 @@ wire        tms_we_n;
 wire        tms_den_n;
 wire        tms_men_n;
 wire        tms_out_en;
-wire        tms_bio_n;
+reg         tms_bio_n;
 reg         tms_int_n;
 
-wire        tms_reset;
+reg         tms_reset;
 reg   [7:0] tms_reset_count;
 
-always @ (posedge clk_70M) begin
+always @ (posedge clk_sys) begin
     if ( reset == 1 ) begin
         tms_reset_count <= 0;
         tms_reset <= 1;
@@ -1098,10 +1034,9 @@ always @ (posedge clk_70M) begin
     end
 end
 
-IKA32010 main
-(
-    .i_EMUCLK      ( clk_70M                                                 ),
-    .i_CLKIN_PCEN  ( clk_14M                                                 ),
+IKA32010 main (
+    .i_EMUCLK      ( clk_sys                                                 ),
+    .i_CLKIN_PCEN  ( cen14                                                   ),
 
     .o_CLKOUT      (                                                         ),
     .o_CLKOUT_PCEN (                                                         ),
@@ -1157,7 +1092,7 @@ always @ (posedge clk_sys) begin
                 end
             end
         // write asserted and rising cpu clock
-        if (  clk_10M == 1 && cpu_rw == 0 ) begin
+        if ((turbo_68k ? fx68k_c : fx68k_a) && cpu_rw == 0 ) begin
             if ( tile_ofs_cs ) begin
                 curr_tile_ofs <= cpu_dout;
             end
@@ -1220,11 +1155,11 @@ reg [15:0] scroll_x_total [3:0];
 reg [15:0] scroll_y_total [3:0];
 
 wire [15:0] ram_dout;
-wire [9:0]  tile_palette_addr;
+reg  [9:0]  tile_palette_addr;
 wire [15:0] tile_palette_cpu_dout;
 wire [15:0] tile_palette_dout;
 
-wire [9:0]  sprite_palette_addr;
+reg  [9:0]  sprite_palette_addr;
 wire [15:0] sprite_palette_cpu_dout;
 wire [15:0] sprite_palette_dout;
 
@@ -1389,7 +1324,7 @@ wire [8:0] sprite_width     = { sprite_size_buf_dout[3:0], 3'b0 } /* synthesis k
 
 reg [7:0] sprite_buf_num;
 
-reg [1:0] vtotal_282_flag; 
+reg [1:0] vtotal_282_flag;
 
 always @ (posedge clk_sys) begin // Check System Vcount flag for 60Hz mode
     if ({crtc[2][7:0], 1'b1 } == 269)
@@ -1504,7 +1439,7 @@ always @ (posedge clk_sys) begin
             sprite_copy_state <= 0;
         end
         // tile state machine
-        if ( draw_state == 0 && vc == ({ crtc[2][7:0], 1'b1 } - (status[19] ? (vtotal_282_flag ? 5'd19 : 4'd7) : 3'd0)) ) begin // 282 Lines standard (263 Lines for 60Hz)
+        if ( draw_state == 0 && vc == ({ crtc[2][7:0], 1'b1 } - (status[8] ? (vtotal_282_flag ? 5'd19 : 4'd7) : 3'd0)) ) begin // 282 Lines standard (263 Lines for 60Hz)
             scroll_x_latch[0] <= scroll_x[0] - scroll_ofs_x;
             scroll_x_latch[1] <= scroll_x[1] - scroll_ofs_x;
             scroll_x_latch[2] <= scroll_x[2] - scroll_ofs_x;
@@ -1608,7 +1543,7 @@ always @ (posedge clk_sys) begin
                 // wait for next line or quit
                 if ( y == 239 ) begin
                     draw_state <= 0;
-                end else if ( hc ==  (status[19] ? 9'd444 : 9'd449) ) begin // 450 Lines standard (445 Lines for NTSC standard 15.73kHz line freq)
+                end else if ( hc ==  (status[8] ? 9'd444 : 9'd449) ) begin // 450 Lines standard (445 Lines for NTSC standard 15.73kHz line freq)
                     y <= y + 1;
                     draw_state <= 2;
                     sprite_state <= 0;
@@ -1633,20 +1568,75 @@ reg draw_sprite;
 
 // dac values based on 120 ohm driver for the resistor dac and 75 ohm output.  4.7k, 2.2k, 1k, 470, 220
 // modeled in spice
-wire [7:0] dac [0:31] = '{0,12,25,36,50,61,73,83,91,100,111,120,131,139,149,157,145,154,162,170,180,187,195,202,208,214,222,228,236,242,249,255};
+reg [7:0] dac [0:31];
+initial begin
+    dac[0]  = 8'd0;
+    dac[1]  = 8'd12;
+    dac[2]  = 8'd25;
+    dac[3]  = 8'd36;
+    dac[4]  = 8'd50;
+    dac[5]  = 8'd61;
+    dac[6]  = 8'd73;
+    dac[7]  = 8'd83;
+    dac[8]  = 8'd91;
+    dac[9]  = 8'd100;
+    dac[10] = 8'd111;
+    dac[11] = 8'd120;
+    dac[12] = 8'd131;
+    dac[13] = 8'd139;
+    dac[14] = 8'd149;
+    dac[15] = 8'd157;
+    dac[16] = 8'd145;
+    dac[17] = 8'd154;
+    dac[18] = 8'd162;
+    dac[19] = 8'd170;
+    dac[20] = 8'd180;
+    dac[21] = 8'd187;
+    dac[22] = 8'd195;
+    dac[23] = 8'd202;
+    dac[24] = 8'd208;
+    dac[25] = 8'd214;
+    dac[26] = 8'd222;
+    dac[27] = 8'd228;
+    dac[28] = 8'd236;
+    dac[29] = 8'd242;
+    dac[30] = 8'd249;
+    dac[31] = 8'd255;
+end
 
-always @ (posedge clk_sys) begin
-    if ( clk7_count == 4 ) begin
-        tile_palette_addr  <= tile_fb_out[9:0];
+reg crtc_boot;
+always @(posedge clk_sys) begin
+    if (reset) begin
+        crtc_boot <= 1'b1;
+    end else if (cen7) begin
+        if (!crtc_ready) begin
+          crtc_boot <= 1'b1; // crtc registers not programmed
+        end else if ((hc == 9'd0) && (vc == 9'd0)) begin
+            crtc_boot <= 1'b0; // crtc registers programmed
+        end
+    end
+end
+
+always @(posedge clk_sys) begin
+    if (reset) begin
+        rgb <= 24'h000000; // push blank frame on reset
+    end else begin
+        tile_palette_addr <= tile_fb_out[9:0];
         sprite_palette_addr <= sprite_fb_out[9:0];
-    end else if ( clk7_count == 6 ) begin
-        // if palette index is zero then it's from layer 3 and is transparent render as blank (black).
-        rgb <= { dac[tile_palette_dout[4:0]], dac[tile_palette_dout[9:5]], dac[tile_palette_dout[14:10]] };
 
-        // if not transparent and sprite is higher priority 
-        if ( sprite_fb_out[3:0] > 0 && (sprite_fb_out[13:10] > tile_fb_out[13:10]) ) begin
-            // draw sprite
-            rgb <= { dac[sprite_palette_dout[4:0]], dac[sprite_palette_dout[9:5]], dac[sprite_palette_dout[14:10]] };
+        if (cen7) begin
+            if (crtc_boot) begin
+                rgb <= 24'h000000; // push blank frame while crtc registers are set
+            end else begin
+                // if palette index is zero then it's from layer 3 and is transparent render as black.
+                rgb <= { dac[tile_palette_dout[4:0]], dac[tile_palette_dout[9:5]], dac[tile_palette_dout[14:10]] };
+
+                // if not transparent and sprite is higher priority
+                if (sprite_fb_out[3:0] > 0 && (sprite_fb_out[13:10] > tile_fb_out[13:10])) begin
+                    // draw sprite
+                    rgb <= { dac[sprite_palette_dout[4:0]], dac[sprite_palette_dout[9:5]], dac[sprite_palette_dout[14:10]] };
+                end
+            end
         end
     end
 end
@@ -1661,7 +1651,7 @@ wire        download_wait;
 // download tms32010 internal rom
 always @ (posedge clk_sys) begin
 
-    download_en    <= ioctl_download & (download_index == 0) ; 
+    download_en    <= ioctl_download & (download_index == 0);
     download_index <= ioctl_index ;
 
     if ( ioctl_addr >= 26'h208000 && ioctl_addr < 26'h209000 ) begin
@@ -1678,15 +1668,14 @@ reg  [15:0] tms_rom_din;
 wire [11:0] tms_rom_addr = tms_addr;
 wire [15:0] tms_rom_dout;
 
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom
-(
-    .clock_a( clk_sys ), // rom download. ioctl stuff. 
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(16)) dsp_rom (
+    .clock_a( clk_sys ), // rom download. ioctl stuff.
     .address_a( download_addr ),
     .wren_a( tms_rom_w ), // 
     .data_a( tms_rom_din ), // 16 bit wide
     .q_a( ),
 
-    .clock_b( clk_14M ),  // tms clock
+    .clock_b( clk_sys ),
     .address_b( tms_rom_addr ),
     .wren_b( 0 ),
     .data_b( ),
@@ -1740,8 +1729,7 @@ always @ (posedge clk_sys) begin
     end
 end
 
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) ram_tile_buf
-(
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) tile_ram_buf (
     .clock_a( clk_sys ),
     .address_a( tile_buf_addr ),
     .wren_a( tile_buf_w ),
@@ -1757,7 +1745,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(32)) ram_tile_buf
 // pppp ---- --cc cccc httt tttt tttt tttt = Tile number (0 - $7fff)
 // indirect access through offset register
 dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_h (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_tile_ofs ),
     .wren_a ( tile_attr_cs & !cpu_rw ),
     .data_a ( cpu_dout ),
@@ -1771,7 +1759,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_h (
     );
     
 dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_l (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_tile_ofs ),
     .wren_a ( tile_num_cs & !cpu_rw ),
     .data_a ( cpu_dout ),
@@ -1788,7 +1776,7 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(16)) tile_ram_l (
 // indirect access through offset register
 // split up so 64 bits can be read in a single clock
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0 (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_sprite_ofs[9:2] ),
     .wren_a ( sprite_0_cs  & !cpu_rw),
     .data_a ( cpu_dout ),
@@ -1814,7 +1802,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_0_buf (
     );
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1 (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_sprite_ofs[9:2] ),
     .wren_a ( sprite_1_cs  & !cpu_rw ),
     .data_a ( cpu_dout ),
@@ -1840,7 +1828,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_1_buf (
     );
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2 (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_sprite_ofs[9:2] ),
     .wren_a ( sprite_2_cs  & !cpu_rw ),
     .data_a ( cpu_dout ),
@@ -1866,7 +1854,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_2_buf (
     );
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3 (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_sprite_ofs[9:2] ),
     .wren_a ( sprite_3_cs  & !cpu_rw ),
     .data_a ( cpu_dout ),
@@ -1892,7 +1880,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_3_buf (
     );
 
 dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( curr_sprite_ofs ),
     .wren_a ( sprite_size_cs  & !cpu_rw),
     .data_a ( cpu_dout ),
@@ -1923,7 +1911,7 @@ dual_port_ram #(.LEN(256), .DATA_WIDTH(16)) sprite_ram_size_buf (
 // background palette ram low
 // does this need to be byte addressable?
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_l (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( tile_palette_cs & !cpu_rw & !cpu_lds_n),
     .data_a ( cpu_dout[7:0]  ),
@@ -1937,7 +1925,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_l (
 
 // background palette ram high
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_h (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( tile_palette_cs & !cpu_rw & !cpu_uds_n),
     .data_a ( cpu_dout[15:8]  ),
@@ -1952,7 +1940,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) tile_palram_h (
 // sprite palette ram low
 // does this need to be byte addressable?
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_l (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( sprite_palette_cs & !cpu_rw & !cpu_lds_n),
     .data_a ( cpu_dout[7:0]  ),
@@ -1966,7 +1954,7 @@ dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_l (
 
 // background palette ram high
 dual_port_ram #(.LEN(1024), .DATA_WIDTH(8)) sprite_palram_h (
-    .clock_a ( clk_10M ),
+    .clock_a ( clk_sys ),
     .address_a ( cpu_a[10:1] ),
     .wren_a ( sprite_palette_cs & !cpu_rw & !cpu_uds_n),
     .data_a ( cpu_dout[15:8]  ),
@@ -1984,9 +1972,8 @@ reg  [12:0] shared_dsp_ram_addr;
 reg         shared_dsp_ram_w;
 
 // main 68k ram high
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H 
-(
-    .clock_a ( clk_10M ),
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H (
+    .clock_a ( clk_sys ),
     .address_a ( cpu_a[14:1] ),
     .wren_a ( !cpu_rw & ram_cs & !cpu_uds_n ),
     .data_a ( cpu_dout[15:8]  ),
@@ -2000,9 +1987,8 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_H
 );
 
 // main 68k ram low
-dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_L
-(
-    .clock_a( clk_10M ),
+dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_L (
+    .clock_a( clk_sys ),
     .address_a( cpu_a[14:1] ),
     .wren_a( !cpu_rw & ram_cs & !cpu_lds_n ),
     .data_a( cpu_dout[7:0]  ),
@@ -2022,15 +2008,14 @@ dual_port_ram #(.LEN(16384), .DATA_WIDTH(8)) ram16kx8_L
 
 // z80 and 68k shared ram
 // 4k
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram 
-(
-    .clock_a( clk_10M ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) shared_ram (
+    .clock_a( clk_sys ),
     .address_a( cpu_a[12:1] ),
     .wren_a( shared_ram_cs & !cpu_rw & !cpu_lds_n),
     .data_a( cpu_dout[7:0]  ),
     .q_a( cpu_shared_dout[7:0] ),
 
-    .clock_b( clk_3_5M ),  // z80 clock is 3.5M
+    .clock_b( clk_sys ),
     .address_b( z80_addr[11:0] ),
     .data_b( z80_dout ),
     .wren_b( sound_ram_1_cs & ~z80_wr_n ),
@@ -2040,9 +2025,8 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(8))  shared_ram
 reg [11:0] sprite_rb_addr;
 wire [15:0] sprite_rb_dout;
 
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l
-(
-    .clock_a( clk_10M ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l (
+    .clock_a( clk_sys ),
     .address_a( cpu_a[12:1] ),
     .wren_a( sprite_ram_cs & !cpu_rw & !cpu_lds_n),
     .data_a( cpu_dout[7:0]  ),
@@ -2054,9 +2038,8 @@ dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_l
     .q_b( sprite_rb_dout[7:0] )
     );
 
-dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_h
-(
-    .clock_a( clk_10M ),
+dual_port_ram #(.LEN(4096), .DATA_WIDTH(8)) sprite_ram_rb_h (
+    .clock_a( clk_sys ),
     .address_a( cpu_a[12:1] ),
     .wren_a( sprite_ram_cs & !cpu_rw & !cpu_uds_n),
     .data_a( cpu_dout[15:8]  ),
@@ -2077,8 +2060,7 @@ wire        sdram_ack;
 wire        sdram_valid;
 wire [31:0] sdram_q;
 
-sdram #(.CLK_FREQ(70.0)) sdram
-(
+sdram #(.CLK_FREQ(70.0)) sdram (
   .reset(~pll_locked),
   .clk(clk_sys),
 
@@ -2125,8 +2107,8 @@ wire        tile_cache_valid;
 
 reg  [31:0] tile_data;
 
-wire        sprite_rom_cs;
-wire [17:0] sprite_rom_addr;
+reg         sprite_rom_cs;
+reg  [17:0] sprite_rom_addr;
 wire [31:0] sprite_rom_data;
 wire        sprite_rom_data_valid;
 
@@ -2138,8 +2120,7 @@ wire        sound_rom_1_data_valid;
 
 // sdram priority based rom controller
 // is a oe needed?
-rom_controller rom_controller
-(
+rom_controller rom_controller (
     .reset(reset),
 
     // clock
@@ -2189,11 +2170,10 @@ rom_controller rom_controller
     .sdram_ack(sdram_ack),
     .sdram_valid(sdram_valid),
     .sdram_q(sdram_q)
-  );
+);
 
 
-cache prog_cache
-(
+cache prog_cache (
     .reset(reset),
     .clk(clk_sys),
 
@@ -2208,11 +2188,9 @@ cache prog_cache
     .rom_addr(prog_cache_addr),
     .rom_valid(prog_cache_valid),
     .rom_data(prog_cache_data)
+);
 
-); 
-
-tile_cache tile_cache
-(
+tile_cache tile_cache (
     .reset(reset),
     .clk(clk_sys),
 
@@ -2227,14 +2205,12 @@ tile_cache tile_cache
     .rom_addr(tile_cache_addr),
     .rom_data(tile_cache_data),
     .rom_valid(tile_cache_valid)
-
 );
 
 endmodule
 
 
-module cc_shifter
-(
+module cc_shifter (
     input clk_out,
     input i,
     output o
